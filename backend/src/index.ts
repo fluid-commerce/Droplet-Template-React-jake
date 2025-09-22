@@ -288,23 +288,23 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
 });
 
 // Get company dashboard data
-fastify.get('/api/droplet/dashboard/:installationId', async (request, reply) => {
-  try {
-    const { installationId } = request.params as { installationId: string };
-    const { fluid_api_key } = request.query as { fluid_api_key: string };
+  fastify.get('/api/droplet/dashboard/:installationId', async (request, reply) => {
+    try {
+      const { installationId } = request.params as { installationId: string };
+      const { fluid_api_key } = request.query as { fluid_api_key: string };
 
-    fastify.log.info(`Dashboard request for installation: ${installationId}, API key: ${fluid_api_key?.substring(0, 10)}...`);
+      fastify.log.info(`Dashboard request for installation: ${installationId}, API key: ${fluid_api_key?.substring(0, 10)}...`);
 
-    if (!fluid_api_key) {
-      fastify.log.warn('Dashboard request missing fluid_api_key');
-      return reply.status(400).send({ error: 'Fluid API key required' });
-    }
-
-    // Validate the authentication token format (should start with 'dit_' or 'cdrtkn_')
-    if (!fluid_api_key.startsWith('dit_') && !fluid_api_key.startsWith('cdrtkn_')) {
-      fastify.log.warn(`Invalid API key format: ${fluid_api_key.substring(0, 10)}...`);
-      return reply.status(400).send({ error: 'Invalid authentication token format' });
-    }
+      // If API key is provided, validate it
+      if (fluid_api_key) {
+        // Validate the authentication token format (should start with 'dit_' or 'cdrtkn_')
+        if (!fluid_api_key.startsWith('dit_') && !fluid_api_key.startsWith('cdrtkn_')) {
+          fastify.log.warn(`Invalid API key format: ${fluid_api_key.substring(0, 10)}...`);
+          return reply.status(400).send({ error: 'Invalid authentication token format' });
+        }
+      } else {
+        fastify.log.info('Dashboard request without API key - returning basic installation data');
+      }
 
     // Find the installation using the correct database schema
     const installation = await prisma.$queryRaw`

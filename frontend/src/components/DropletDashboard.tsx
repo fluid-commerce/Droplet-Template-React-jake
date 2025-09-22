@@ -77,18 +77,18 @@ export function DropletDashboard() {
 
       // If we don't have fluid_api_key, try the installation endpoint first
       if (!fluidApiKey) {
-        console.log('⚠️ Missing Fluid API key, trying installation endpoint')
+        console.log('⚠️ Missing Fluid API key, trying dashboard endpoint without API key')
         try {
-          const apiUrl = `/api/droplet/installation/${installationId}`
-          console.log('🚀 Making API request to installation endpoint:', apiUrl)
+          const apiUrl = `/api/droplet/dashboard/${installationId}`
+          console.log('🚀 Making API request to dashboard endpoint:', apiUrl)
           
           const response = await apiClient.get(apiUrl)
-          console.log('✅ Installation API Response received:', response.data)
+          console.log('✅ Dashboard API Response received:', response.data)
           setDashboardData(response.data.data)
           setIsLoading(false)
           return
         } catch (err: any) {
-          console.log('❌ Installation endpoint failed:', err.response?.status, err.response?.data)
+          console.log('❌ Dashboard endpoint failed:', err.response?.status, err.response?.data)
           // Continue to show error about missing API key
         }
       }
