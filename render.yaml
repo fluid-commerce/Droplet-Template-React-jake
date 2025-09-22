@@ -1,4 +1,5 @@
 # Render deployment configuration for Fluid Droplet Template
+# Updated: September 22, 2025 - Fixed project structure and build commands
 
 services:
   # Frontend service (React app)
@@ -29,7 +30,7 @@ services:
     name: droplet-backend
     env: node
     buildCommand: cd backend && npm install && npm run build
-    startCommand: cd backend && npm start
+    startCommand: cd backend && node dist/index.js
     # Backend service with organized structure
     # All backend files are in the backend/ directory
     envVars:
