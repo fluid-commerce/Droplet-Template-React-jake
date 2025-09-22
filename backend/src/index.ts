@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import { prisma } from './db';
+import { randomUUID } from 'crypto';
 
 const fastify = Fastify({
   logger: true
@@ -238,16 +239,17 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
       return reply.status(400).send({ error: 'Invalid authentication token format' });
     }
 
-    // Find the installation using the existing database schema
+    // Find the installation using the correct database schema
     const installation = await prisma.$queryRaw`
       SELECT 
-        id,
-        installation_id as "fluidId",
-        status as "isActive",
-        authentication_token as "authenticationToken",
-        company_name as "companyName"
-      FROM droplet_installations
-      WHERE installation_id = ${installationId}
+        i.id,
+        i."fluidId",
+        i."isActive",
+        i."authenticationToken",
+        c.name as "companyName"
+      FROM installations i
+      JOIN companies c ON i."companyId" = c.id
+      WHERE i."fluidId" = ${installationId}
     ` as any[];
 
     if (!installation || installation.length === 0) {
@@ -304,17 +306,18 @@ fastify.get('/api/droplet/dashboard/:installationId', async (request, reply) => 
       return reply.status(400).send({ error: 'Invalid authentication token format' });
     }
 
-    // Find the installation using the existing database schema
+    // Find the installation using the correct database schema
     const installation = await prisma.$queryRaw`
       SELECT 
-        id,
-        installation_id as "fluidId",
-        status as "isActive",
-        authentication_token as "authenticationToken",
-        company_name as "companyName",
-        company_data->>'logoUrl' as "logoUrl"
-      FROM droplet_installations
-      WHERE installation_id = ${installationId}
+        i.id,
+        i."fluidId",
+        i."isActive",
+        i."authenticationToken",
+        c.name as "companyName",
+        c."logoUrl"
+      FROM installations i
+      JOIN companies c ON i."companyId" = c.id
+      WHERE i."fluidId" = ${installationId}
     ` as any[];
 
     fastify.log.info(`Installation lookup result: ${installation && installation.length > 0 ? 'found' : 'not found'}`);
@@ -364,42 +367,31 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
       
       fastify.log.info(`Processing installation event for: ${company.droplet_installation_uuid}`);
       
-      // Company data is now stored directly in droplet_installations table
+      // Create or update company
+      const companyRecord = await prisma.company.upsert({
+        where: { fluidId: company.fluid_company_id.toString() },
+        update: {
+          name: company.name,
+          logoUrl: null, // Fluid doesn't provide logo in webhook
+          updatedAt: new Date()
+        },
+        create: {
+          fluidId: company.fluid_company_id.toString(),
+          name: company.name,
+          logoUrl: null
+        }
+      });
 
-      // Create or update installation using the existing database schema
+      // Create or update installation using raw SQL to handle the new column
       const installation = await prisma.$queryRaw`
-        INSERT INTO droplet_installations (
-          id, 
-          installation_id, 
-          droplet_id, 
-          company_id, 
-          authentication_token, 
-          status, 
-          company_name,
-          company_data,
-          created_at, 
-          updated_at
-        )
-        VALUES (
-          gen_random_uuid(), 
-          ${company.droplet_installation_uuid}, 
-          ${company.droplet_uuid}, 
-          ${company.fluid_company_id}, 
-          ${company.authentication_token}, 
-          'active', 
-          ${company.name},
-          ${JSON.stringify({ name: company.name, fluidShop: company.fluid_shop })},
-          NOW(), 
-          NOW()
-        )
-        ON CONFLICT (installation_id) 
+        INSERT INTO installations (id, "companyId", "fluidId", "authenticationToken", "isActive", "createdAt", "updatedAt")
+        VALUES (${randomUUID()}, ${companyRecord.id}, ${company.droplet_installation_uuid}, ${company.authentication_token}, true, NOW(), NOW())
+        ON CONFLICT ("fluidId") 
         DO UPDATE SET 
-          status = 'active',
-          authentication_token = ${company.authentication_token},
-          company_name = ${company.name},
-          company_data = ${JSON.stringify({ name: company.name, fluidShop: company.fluid_shop })},
-          updated_at = NOW()
-        RETURNING id, installation_id as "fluidId", status as "isActive", authentication_token as "authenticationToken"
+          "isActive" = true,
+          "authenticationToken" = ${company.authentication_token},
+          "updatedAt" = NOW()
+        RETURNING id, "fluidId", "isActive", "authenticationToken"
       ` as any[];
 
       const installData = installation[0];
@@ -413,12 +405,12 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
       
       fastify.log.info(`Processing uninstallation event for: ${company.droplet_installation_uuid}`);
       
-      // Deactivate the installation using the existing database schema
+      // Deactivate the installation using the correct database schema
       const result = await prisma.$queryRaw`
-        UPDATE droplet_installations 
-        SET status = 'inactive', updated_at = NOW()
-        WHERE installation_id = ${company.droplet_installation_uuid}
-        RETURNING installation_id
+        UPDATE installations 
+        SET "isActive" = false, "updatedAt" = NOW()
+        WHERE "fluidId" = ${company.droplet_installation_uuid}
+        RETURNING "fluidId"
       ` as any[];
 
       fastify.log.info(`Installation deactivated: ${company.droplet_installation_uuid}, updated: ${result.length} records`);
