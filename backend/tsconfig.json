@@ -2,9 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "lib": ["ES2020"],
-    "baseUrl": "../../",
-    "typeRoots": ["node_modules/@types"],
+    "lib": ["ES2020", "DOM"],
     "moduleResolution": "node",
     "outDir": "./dist",
     "rootDir": "./src",
