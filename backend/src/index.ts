@@ -85,6 +85,45 @@ fastify.get('/api/debug/installations', async (request, reply) => {
   }
 });
 
+// Get installation details including authentication token (for Fluid integration)
+fastify.get('/api/droplet/installation/:installationId', async (request, reply) => {
+  try {
+    const { installationId } = request.params as { installationId: string };
+    
+    fastify.log.info(`Installation details request for: ${installationId}`);
+    
+    const installation = await prisma.installation.findUnique({
+      where: { fluidId: installationId },
+      include: { company: true }
+    });
+
+    if (!installation) {
+      fastify.log.warn(`Installation not found: ${installationId}`);
+      return reply.status(404).send({ error: 'Installation not found' });
+    }
+
+    if (!installation.isActive) {
+      fastify.log.warn(`Installation inactive: ${installationId}`);
+      return reply.status(403).send({ error: 'Installation is inactive' });
+    }
+
+    const result = {
+      data: {
+        companyName: installation.company.name,
+        logoUrl: installation.company.logoUrl,
+        installationId: installation.fluidId,
+        isActive: installation.isActive
+      }
+    };
+
+    fastify.log.info(`Returning installation details for: ${installation.company.name}`);
+    return result;
+  } catch (error) {
+    fastify.log.error(error);
+    return reply.status(500).send({ error: 'Internal server error' });
+  }
+});
+
 // Get company dashboard data
 fastify.get('/api/droplet/dashboard/:installationId', async (request, reply) => {
   try {

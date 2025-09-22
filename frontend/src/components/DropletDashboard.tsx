@@ -10,7 +10,7 @@ interface DashboardData {
 
 export function DropletDashboard() {
   const [searchParams] = useSearchParams()
-  const installationId = searchParams.get('installation_id')
+  const installationId = searchParams.get('installation_id') || searchParams.get('dri')
   const fluidApiKey = searchParams.get('fluid_api_key')
   
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
@@ -25,6 +25,7 @@ export function DropletDashboard() {
       console.log('🔍 API Base URL:', import.meta.env.VITE_API_BASE_URL)
       console.log('🔍 Current URL:', window.location.href)
       console.log('🔍 Search params:', window.location.search)
+      console.log('🔍 All URL params:', Object.fromEntries(searchParams.entries()))
       
       // Check if we're missing both parameters - this indicates we're not in a proper Fluid embed
       if (!installationId && !fluidApiKey) {
@@ -39,6 +40,24 @@ export function DropletDashboard() {
         setError('Missing installation ID. Please try reinstalling the droplet from the Fluid marketplace.')
         setIsLoading(false)
         return
+      }
+
+      // If we don't have fluid_api_key, try the installation endpoint first
+      if (!fluidApiKey) {
+        console.log('⚠️ Missing Fluid API key, trying installation endpoint')
+        try {
+          const apiUrl = `/api/droplet/installation/${installationId}`
+          console.log('🚀 Making API request to installation endpoint:', apiUrl)
+          
+          const response = await apiClient.get(apiUrl)
+          console.log('✅ Installation API Response received:', response.data)
+          setDashboardData(response.data.data)
+          setIsLoading(false)
+          return
+        } catch (err: any) {
+          console.log('❌ Installation endpoint failed:', err.response?.status, err.response?.data)
+          // Continue to show error about missing API key
+        }
       }
 
       if (!fluidApiKey) {
