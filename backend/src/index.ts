@@ -38,8 +38,8 @@ fastify.get('/api/droplet/dashboard/:installationId', async (request, reply) => 
       return reply.status(400).send({ error: 'Fluid API key required' });
     }
 
-    // Validate the authentication token format (should start with 'cdrtkn_')
-    if (!fluid_api_key.startsWith('cdrtkn_')) {
+    // Validate the authentication token format (should start with 'dit_' or 'cdrtkn_')
+    if (!fluid_api_key.startsWith('dit_') && !fluid_api_key.startsWith('cdrtkn_')) {
       return reply.status(400).send({ error: 'Invalid authentication token format' });
     }
 
@@ -78,33 +78,33 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
     fastify.log.info(`Webhook headers: ${JSON.stringify(request.headers, null, 2)}`);
 
     // Handle installation events
-    if (body.event === 'installation.created') {
-      const { company, installation } = body.data;
+    if (body.event === 'installed') {
+      const { company } = body;
       
       // Create or update company
       const companyRecord = await prisma.company.upsert({
-        where: { fluidId: company.id },
+        where: { fluidId: company.fluid_company_id.toString() },
         update: {
           name: company.name,
-          logoUrl: company.logo_url,
+          logoUrl: null, // Fluid doesn't provide logo in webhook
           updatedAt: new Date()
         },
         create: {
-          fluidId: company.id,
+          fluidId: company.fluid_company_id.toString(),
           name: company.name,
-          logoUrl: company.logo_url
+          logoUrl: null
         }
       });
 
       // Create installation
       await prisma.installation.upsert({
-        where: { fluidId: installation.id },
+        where: { fluidId: company.droplet_installation_uuid },
         update: {
           isActive: true,
           updatedAt: new Date()
         },
         create: {
-          fluidId: installation.id,
+          fluidId: company.droplet_installation_uuid,
           companyId: companyRecord.id,
           isActive: true
         }
@@ -114,15 +114,15 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
     }
 
     // Handle uninstallation events
-    if (body.event === 'installation.deleted') {
-      const { installation } = body.data;
+    if (body.event === 'uninstalled') {
+      const { company } = body;
       
       await prisma.installation.update({
-        where: { fluidId: installation.id },
+        where: { fluidId: company.droplet_installation_uuid },
         data: { isActive: false }
       });
 
-      fastify.log.info(`Installation deactivated: ${installation.id}`);
+      fastify.log.info(`Installation deactivated: ${company.droplet_installation_uuid}`);
     }
 
     return { status: 'ok' };
