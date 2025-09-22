@@ -1,25 +1,15 @@
 {
-  "name": "dropletguide-backend",
+  "name": "dropletguide",
   "version": "1.0.0",
-  "description": "Fluid Droplet Backend",
-  "main": "dist/index.js",
+  "description": "Fluid Droplet Template",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "tsx watch src/index.ts",
-    "postinstall": "npx prisma generate"
-  },
-  "dependencies": {
-    "@fastify/cors": "^11.1.0",
-    "@fastify/helmet": "^13.0.1",
-    "@prisma/client": "^6.16.2",
-    "dotenv": "^17.2.2",
-    "fastify": "^5.6.1",
-    "prisma": "^6.16.2"
+    "build:frontend": "cd frontend && npm install && npm run build",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "build": "npm run build:frontend"
   },
   "devDependencies": {
-    "@types/node": "^24.5.2",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
+    "concurrently": "^8.2.2"
   }
 }
