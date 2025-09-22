@@ -74,7 +74,8 @@ fastify.get('/api/droplet/dashboard/:installationId', async (request, reply) => 
 fastify.post('/api/webhook/fluid', async (request, reply) => {
   try {
     const body = request.body as any;
-    fastify.log.info('Received webhook:', body);
+    fastify.log.info(`Received webhook body: ${JSON.stringify(body, null, 2)}`);
+    fastify.log.info(`Webhook headers: ${JSON.stringify(request.headers, null, 2)}`);
 
     // Handle installation events
     if (body.event === 'installation.created') {
