@@ -30,6 +30,7 @@ services:
     env: node
     buildCommand: npm install && npm run build:backend
     startCommand: npm run start:backend
+    # Force deployment with npm workspaces
     # Note: Run migrations manually before deploying
     # npm run migrate (from project root)
     envVars:
