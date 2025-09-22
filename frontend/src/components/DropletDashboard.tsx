@@ -19,23 +19,42 @@ export function DropletDashboard() {
 
   useEffect(() => {
     const loadDashboardData = async () => {
+      console.log('🔍 DropletDashboard: Starting loadDashboardData')
+      console.log('🔍 Installation ID:', installationId)
+      console.log('🔍 Fluid API Key:', fluidApiKey)
+      console.log('🔍 API Base URL:', import.meta.env.VITE_API_BASE_URL)
+      
       if (!installationId) {
+        console.log('❌ Missing installation ID')
         setError('Missing installation ID')
         setIsLoading(false)
         return
       }
 
       if (!fluidApiKey) {
+        console.log('❌ Missing Fluid API key')
         setError('Missing Fluid API key')
         setIsLoading(false)
         return
       }
 
       try {
-        const response = await apiClient.get(`/api/droplet/dashboard/${installationId}?fluid_api_key=${fluidApiKey}`)
+        const apiUrl = `/api/droplet/dashboard/${installationId}?fluid_api_key=${fluidApiKey}`
+        console.log('🚀 Making API request to:', apiUrl)
+        console.log('🚀 Full URL will be:', `${import.meta.env.VITE_API_BASE_URL}${apiUrl}`)
+        
+        const response = await apiClient.get(apiUrl)
+        console.log('✅ API Response received:', response.data)
         setDashboardData(response.data.data)
       } catch (err: any) {
-        console.error('Failed to load dashboard data:', err)
+        console.error('❌ Failed to load dashboard data:', err)
+        console.error('❌ Error details:', {
+          message: err.message,
+          status: err.response?.status,
+          statusText: err.response?.statusText,
+          data: err.response?.data,
+          config: err.config
+        })
         
         // If installation not found (404) or forbidden (403), it was likely uninstalled
         if (err.response?.status === 404 || err.response?.status === 403) {
