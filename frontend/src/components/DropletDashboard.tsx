@@ -22,8 +22,31 @@ export function DropletDashboard() {
   const fluidApiKey = searchParams.get('fluid_api_key')
   
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
+  const [brandGuidelines, setBrandGuidelines] = useState<BrandGuidelines | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Helper function to format colors
+  const formatColor = (color: string | null | undefined) => {
+    if (!color) return undefined
+    return color.startsWith('#') ? color : `#${color}`
+  }
+
+  // Function to fetch brand guidelines from Fluid API
+  const fetchBrandGuidelines = async (installationId: string, fluidApiKey: string) => {
+    try {
+      console.log('🎨 Fetching brand guidelines for installation:', installationId)
+      const response = await apiClient.get(`/api/droplet/brand-guidelines/${installationId}?fluid_api_key=${fluidApiKey}`)
+      const brandData = response.data.data
+      console.log('✅ Brand guidelines loaded:', brandData)
+      setBrandGuidelines(brandData)
+      return brandData
+    } catch (err: any) {
+      console.log('⚠️ Failed to fetch brand guidelines:', err.response?.status, err.response?.data)
+      // Don't fail the whole dashboard if brand guidelines fail
+      return null
+    }
+  }
 
 
   useEffect(() => {
@@ -77,9 +100,21 @@ export function DropletDashboard() {
       }
 
       try {
-        const response = await apiClient.get(`/api/droplet/dashboard/${installationId}?fluid_api_key=${fluidApiKey}`)
-        console.log('✅ Dashboard API Response received:', response.data)
-        setDashboardData(response.data.data)
+        // Fetch dashboard data and brand guidelines in parallel
+        const [dashboardResponse, brandData] = await Promise.all([
+          apiClient.get(`/api/droplet/dashboard/${installationId}?fluid_api_key=${fluidApiKey}`),
+          fetchBrandGuidelines(installationId, fluidApiKey)
+        ])
+
+        console.log('✅ Dashboard API Response received:', dashboardResponse.data)
+        const dashboardData = dashboardResponse.data.data
+        
+        // If we have brand guidelines, merge them into dashboard data
+        if (brandData) {
+          dashboardData.brandGuidelines = brandData
+        }
+        
+        setDashboardData(dashboardData)
       } catch (err: any) {
         console.error('❌ Failed to load dashboard data:', err)
         console.error('❌ Error details:', {
@@ -114,12 +149,30 @@ export function DropletDashboard() {
   }, [installationId, fluidApiKey])
 
   if (isLoading) {
+    // Use brand colors if available, otherwise use default blue
+    const defaultColor = '#2563eb'
+    const primaryColor = brandGuidelines?.color ? formatColor(brandGuidelines.color) : defaultColor
+    const lightColor = brandGuidelines?.color ? `${formatColor(brandGuidelines.color)}20` : `${defaultColor}20`
+    
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div 
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{
+          background: brandGuidelines?.color 
+            ? `linear-gradient(135deg, ${lightColor}, ${formatColor(brandGuidelines.color)}10)`
+            : 'linear-gradient(135deg, #f8fafc, #e0e7ff, #c7d2fe)'
+        }}
+      >
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-6"></div>
+          <div 
+            className="w-16 h-16 border-4 rounded-full animate-spin mx-auto mb-6"
+            style={{
+              borderColor: `${primaryColor}20`,
+              borderTopColor: primaryColor
+            }}
+          ></div>
           <h3 className="text-2xl font-semibold text-gray-800 mb-2">
-            Loading Dashboard...
+            Loading {brandGuidelines?.name || 'Dashboard'}...
           </h3>
           <p className="text-gray-600 mt-2">Please wait while we set up your droplet</p>
         </div>
@@ -168,7 +221,14 @@ export function DropletDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Full-width Header with Company Info */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+      <div 
+        className="text-white"
+        style={{
+          background: dashboardData?.brandGuidelines?.color 
+            ? `linear-gradient(135deg, ${formatColor(dashboardData.brandGuidelines.color)}, ${formatColor(dashboardData.brandGuidelines.secondary_color || dashboardData.brandGuidelines.color)})`
+            : 'linear-gradient(135deg, #2563eb, #1d4ed8, #3730a3)'
+        }}
+      >
         <div className="w-full px-6 py-12">
           <div className="flex items-center gap-6">
             {(dashboardData?.brandGuidelines?.logo_url || dashboardData?.logoUrl) && (
@@ -188,7 +248,7 @@ export function DropletDashboard() {
               <h1 className="text-4xl font-bold">
                 {dashboardData?.brandGuidelines?.name || dashboardData?.companyName || 'Your Business'}
               </h1>
-              <p className="text-blue-100 text-lg mt-2">Welcome to your Fluid droplet</p>
+              <p className="text-white/80 text-lg mt-2">Welcome to your Fluid droplet</p>
             </div>
           </div>
         </div>
@@ -199,8 +259,25 @@ export function DropletDashboard() {
         <div className="max-w-6xl mx-auto">
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
             <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div 
+                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6"
+                style={{
+                  backgroundColor: dashboardData?.brandGuidelines?.color 
+                    ? `${formatColor(dashboardData.brandGuidelines.color)}15` 
+                    : '#dcfce7'
+                }}
+              >
+                <svg 
+                  className="w-8 h-8" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                  style={{
+                    color: dashboardData?.brandGuidelines?.color 
+                      ? formatColor(dashboardData.brandGuidelines.color)
+                      : '#16a34a'
+                  }}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
@@ -210,11 +287,32 @@ export function DropletDashboard() {
               <p className="text-gray-600 mb-6 text-lg">
                 Your Fluid droplet is now active and ready to use.
               </p>
-              <div className="bg-gray-50 rounded-lg p-6 text-sm text-gray-700 max-w-md mx-auto">
+              <div 
+                className="rounded-lg p-6 text-sm text-gray-700 max-w-md mx-auto"
+                style={{
+                  backgroundColor: dashboardData?.brandGuidelines?.color 
+                    ? `${formatColor(dashboardData.brandGuidelines.color)}10` 
+                    : '#f9fafb',
+                  borderColor: dashboardData?.brandGuidelines?.color 
+                    ? `${formatColor(dashboardData.brandGuidelines.color)}30` 
+                    : '#e5e7eb'
+                }}
+              >
                 <div className="space-y-2">
                   <p><strong>Company:</strong> {dashboardData?.brandGuidelines?.name || dashboardData?.companyName}</p>
                   <p><strong>Installation ID:</strong> {dashboardData?.installationId}</p>
-                  <p><strong>Status:</strong> <span className="text-green-600 font-medium">Active</span></p>
+                  <p><strong>Status:</strong> 
+                    <span 
+                      className="font-medium ml-1"
+                      style={{
+                        color: dashboardData?.brandGuidelines?.color 
+                          ? formatColor(dashboardData.brandGuidelines.color)
+                          : '#16a34a'
+                      }}
+                    >
+                      Active
+                    </span>
+                  </p>
                 </div>
               </div>
             </div>

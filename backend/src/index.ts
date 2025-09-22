@@ -159,21 +159,60 @@ fastify.get('/api/droplet/brand-guidelines/:installationId', async (request, rep
       return reply.status(403).send({ error: 'Installation is inactive' });
     }
 
-    // TODO: In a real implementation, you would fetch brand guidelines from Fluid API
-    // For now, we'll return basic company information as brand guidelines
-    const brandGuidelines = {
-      name: installation.company.name,
-      logo_url: installation.company.logoUrl,
-      color: '#2563eb', // Default blue, in real implementation this would come from Fluid API
-      secondary_color: '#1d4ed8'
-    };
+    try {
+      // Fetch brand guidelines from Fluid API
+      // Note: We don't store the fluid_shop in our database, so we'll use the main Fluid API
+      const fluidApiUrl = `https://fluid.app/api/settings/brand_guidelines`;
+      fastify.log.info(`Fetching brand guidelines from: ${fluidApiUrl}`);
 
-    const result = {
-      data: brandGuidelines
-    };
+      const response = await fetch(fluidApiUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${fluid_api_key}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
-    fastify.log.info(`Returning brand guidelines for: ${installation.company.name}`);
-    return result;
+      if (!response.ok) {
+        fastify.log.warn(`Fluid API returned ${response.status}: ${response.statusText}`);
+        throw new Error(`Fluid API error: ${response.status}`);
+      }
+
+      const brandData = await response.json();
+      fastify.log.info(`Brand guidelines fetched from Fluid API:`, brandData);
+
+      const result = {
+        data: {
+          name: brandData.name || installation.company.name,
+          logo_url: brandData.logo_url || installation.company.logoUrl,
+          color: brandData.color || '#2563eb',
+          secondary_color: brandData.secondary_color || '#1d4ed8',
+          icon_url: brandData.icon_url,
+          favicon_url: brandData.favicon_url
+        }
+      };
+
+      fastify.log.info(`Returning brand guidelines for: ${result.data.name}`);
+      return result;
+    } catch (fetchError) {
+      const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown error';
+      fastify.log.warn(`Failed to fetch brand guidelines from Fluid API: ${errorMessage}`);
+      
+      // Fallback to basic company information
+      const brandGuidelines = {
+        name: installation.company.name,
+        logo_url: installation.company.logoUrl,
+        color: '#2563eb', // Default blue fallback
+        secondary_color: '#1d4ed8'
+      };
+
+      const result = {
+        data: brandGuidelines
+      };
+
+      fastify.log.info(`Returning fallback brand guidelines for: ${installation.company.name}`);
+      return result;
+    }
   } catch (error) {
     fastify.log.error(error);
     return reply.status(500).send({ error: 'Internal server error' });
