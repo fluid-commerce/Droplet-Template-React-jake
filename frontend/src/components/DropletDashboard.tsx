@@ -221,111 +221,277 @@ export function DropletDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Full-width Header with Company Info */}
+      {/* Modern Header with Company Branding */}
       <div 
-        className="text-white"
+        className="relative overflow-hidden"
         style={{
           background: dashboardData?.brandGuidelines?.color 
-            ? `linear-gradient(135deg, ${formatColor(dashboardData.brandGuidelines.color)}, ${formatColor(dashboardData.brandGuidelines.secondary_color || dashboardData.brandGuidelines.color)})`
-            : 'linear-gradient(135deg, #2563eb, #1d4ed8, #3730a3)'
+            ? `linear-gradient(135deg, ${formatColor(dashboardData.brandGuidelines.color)}, ${formatColor(dashboardData.brandGuidelines.secondary_color || dashboardData.brandGuidelines.color)}dd)`
+            : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
         }}
       >
-        <div className="w-full px-6 py-12">
-          <div className="flex items-center gap-6">
-            {(dashboardData?.brandGuidelines?.logo_url || dashboardData?.logoUrl) && (
-              <div className="w-20 h-20 rounded-xl p-3 shadow-lg bg-white/95 flex items-center justify-center">
-                <img 
-                  src={dashboardData.brandGuidelines?.logo_url || dashboardData.logoUrl} 
-                  alt={`${dashboardData.brandGuidelines?.name || dashboardData.companyName} logo`}
-                  className="w-full h-full object-contain"
-                  onError={(e) => {
-                    // Hide logo if it fails to load
-                    e.currentTarget.style.display = 'none'
-                  }}
-                />
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 25% 25%, white 2px, transparent 0),
+                             radial-gradient(circle at 75% 75%, white 2px, transparent 0)`,
+            backgroundSize: '50px 50px'
+          }}></div>
+        </div>
+        
+        <div className="relative px-6 py-16">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center gap-8">
+              {/* Company Logo */}
+              {(dashboardData?.brandGuidelines?.logo_url || dashboardData?.logoUrl) && (
+                <div className="w-24 h-24 rounded-2xl p-4 shadow-2xl bg-white/95 flex items-center justify-center backdrop-blur-sm">
+                  <img 
+                    src={dashboardData.brandGuidelines?.logo_url || dashboardData.logoUrl} 
+                    alt={`${dashboardData.brandGuidelines?.name || dashboardData.companyName} logo`}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                </div>
+              )}
+              
+              {/* Company Info */}
+              <div className="flex-1">
+                <h1 className="text-5xl font-bold text-white mb-3">
+                  Welcome to your Fluid droplet
+                </h1>
+                <p className="text-2xl text-white/90 font-medium">
+                  {dashboardData?.brandGuidelines?.name || dashboardData?.companyName}
+                </p>
+                <div className="flex items-center gap-4 mt-4">
+                  <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span className="text-white font-medium">Active</span>
+                  </div>
+                  <div className="text-white/80 text-sm">
+                    Installation ID: <span className="font-mono">{dashboardData?.installationId}</span>
+                  </div>
+                </div>
               </div>
-            )}
-            <div>
-              <h1 className="text-4xl font-bold">
-                {dashboardData?.brandGuidelines?.name || dashboardData?.companyName || 'Your Business'}
-              </h1>
-              <p className="text-white/80 text-lg mt-2">Welcome to your Fluid droplet</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Full-width Content Area */}
-      <div className="w-full px-6 py-12">
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
-            <div className="text-center">
-              <div 
-                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6"
-                style={{
-                  backgroundColor: dashboardData?.brandGuidelines?.color 
-                    ? `${formatColor(dashboardData.brandGuidelines.color)}15` 
-                    : '#dcfce7'
-                }}
-              >
-                <svg 
-                  className="w-8 h-8" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
+      {/* Main Dashboard Content */}
+      <div className="px-6 py-12">
+        <div className="max-w-7xl mx-auto">
+          {/* Success Card */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden mb-8">
+            <div className="p-8">
+              <div className="flex items-center justify-center mb-6">
+                <div 
+                  className="w-20 h-20 rounded-full flex items-center justify-center"
                   style={{
-                    color: dashboardData?.brandGuidelines?.color 
-                      ? formatColor(dashboardData.brandGuidelines.color)
-                      : '#16a34a'
+                    backgroundColor: dashboardData?.brandGuidelines?.color 
+                      ? `${formatColor(dashboardData.brandGuidelines.color)}20` 
+                      : '#10b98120'
                   }}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+                  <svg 
+                    className="w-10 h-10" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                    style={{
+                      color: dashboardData?.brandGuidelines?.color 
+                        ? formatColor(dashboardData.brandGuidelines.color)
+                        : '#10b981'
+                    }}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
               </div>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-3">
-                Installation Successful!
-              </h2>
-              <p className="text-gray-600 mb-6 text-lg">
-                Your Fluid droplet is now active and ready to use.
-              </p>
-              <div 
-                className="rounded-lg p-6 text-sm text-gray-700 max-w-2xl mx-auto"
-                style={{
-                  backgroundColor: dashboardData?.brandGuidelines?.color 
-                    ? `${formatColor(dashboardData.brandGuidelines.color)}10` 
-                    : '#f9fafb',
-                  borderColor: dashboardData?.brandGuidelines?.color 
-                    ? `${formatColor(dashboardData.brandGuidelines.color)}30` 
-                    : '#e5e7eb'
-                }}
-              >
-                <div className="space-y-3">
-                  <p><strong>Company:</strong> {dashboardData?.brandGuidelines?.name || dashboardData?.companyName}</p>
-                  <p><strong>Installation ID:</strong> {dashboardData?.installationId}</p>
-                  <p><strong>Status:</strong> 
-                    <span 
-                      className="font-medium ml-1"
-                      style={{
-                        color: dashboardData?.brandGuidelines?.color 
-                          ? formatColor(dashboardData.brandGuidelines.color)
-                          : '#16a34a'
-                      }}
-                    >
-                      Active
-                    </span>
-                  </p>
-                  
-                  {/* Company Authentication Token */}
-                  {dashboardData?.authenticationToken && (
-                    <div className="border-t pt-3 mt-3">
-                      <h4 className="font-semibold text-gray-900 mb-2">Company API Token</h4>
+              
+              <div className="text-center">
+                <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                  Installation Successful!
+                </h2>
+                <p className="text-xl text-gray-600 mb-8">
+                  Your Fluid droplet is now active and ready to use.
+                </p>
+              </div>
+
+              {/* Company Details Accordion */}
+              <div className="max-w-4xl mx-auto">
+                <div className="space-y-4">
+                  {/* Basic Info */}
+                  <div className="bg-gray-50 rounded-2xl p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div>
-                        <p className="font-medium text-xs text-gray-600">Authentication Token:</p>
-                        <p className="text-xs font-mono bg-gray-100 p-2 rounded border break-all">
-                          {dashboardData.authenticationToken}
+                        <p className="text-sm font-medium text-gray-500 mb-1">Company</p>
+                        <p className="text-lg font-semibold text-gray-900">
+                          {dashboardData?.brandGuidelines?.name || dashboardData?.companyName}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">Use this token to authenticate API calls on behalf of the company (create orders, sync data, etc.)</p>
                       </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-500 mb-1">Installation ID</p>
+                        <p className="text-lg font-mono text-gray-900">{dashboardData?.installationId}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-500 mb-1">Status</p>
+                        <span 
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                          style={{
+                            backgroundColor: dashboardData?.brandGuidelines?.color 
+                              ? `${formatColor(dashboardData.brandGuidelines.color)}20`
+                              : '#dcfce720',
+                            color: dashboardData?.brandGuidelines?.color 
+                              ? formatColor(dashboardData.brandGuidelines.color)
+                              : '#16a34a'
+                          }}
+                        >
+                          <div className="w-2 h-2 rounded-full mr-2" style={{
+                            backgroundColor: dashboardData?.brandGuidelines?.color 
+                              ? formatColor(dashboardData.brandGuidelines.color)
+                              : '#16a34a'
+                          }}></div>
+                          Active
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* API Token - Collapsible */}
+                  {dashboardData?.authenticationToken && (
+                    <div className="bg-gray-50 rounded-2xl overflow-hidden">
+                      <details className="group">
+                        <summary className="flex items-center justify-between p-6 cursor-pointer hover:bg-gray-100 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <div 
+                              className="w-8 h-8 rounded-lg flex items-center justify-center"
+                              style={{
+                                backgroundColor: dashboardData?.brandGuidelines?.color 
+                                  ? `${formatColor(dashboardData.brandGuidelines.color)}20`
+                                  : '#3b82f620'
+                              }}
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{
+                                color: dashboardData?.brandGuidelines?.color 
+                                  ? formatColor(dashboardData.brandGuidelines.color)
+                                  : '#3b82f6'
+                              }}>
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                              </svg>
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-gray-900">Company API Token</h3>
+                              <p className="text-sm text-gray-500">Authentication token for company API access</p>
+                            </div>
+                          </div>
+                          <svg className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </summary>
+                        
+                        <div className="px-6 pb-6">
+                          <div className="bg-white rounded-xl p-4 border border-gray-200">
+                            <p className="text-sm font-medium text-gray-700 mb-2">Authentication Token:</p>
+                            <div className="bg-gray-900 rounded-lg p-4">
+                              <code className="text-green-400 font-mono text-sm break-all block">
+                                {dashboardData.authenticationToken}
+                              </code>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-3">
+                              Use this token to authenticate API calls on behalf of the company (create orders, sync data, etc.)
+                            </p>
+                          </div>
+                        </div>
+                      </details>
+                    </div>
+                  )}
+
+                  {/* Brand Guidelines - Collapsible */}
+                  {dashboardData?.brandGuidelines && (
+                    <div className="bg-gray-50 rounded-2xl overflow-hidden">
+                      <details className="group">
+                        <summary className="flex items-center justify-between p-6 cursor-pointer hover:bg-gray-100 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <div 
+                              className="w-8 h-8 rounded-lg flex items-center justify-center"
+                              style={{
+                                backgroundColor: dashboardData?.brandGuidelines?.color 
+                                  ? `${formatColor(dashboardData.brandGuidelines.color)}20`
+                                  : '#8b5cf620'
+                              }}
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{
+                                color: dashboardData?.brandGuidelines?.color 
+                                  ? formatColor(dashboardData.brandGuidelines.color)
+                                  : '#8b5cf6'
+                              }}>
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
+                              </svg>
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-gray-900">Brand Guidelines</h3>
+                              <p className="text-sm text-gray-500">Company colors, logo, and branding</p>
+                            </div>
+                          </div>
+                          <svg className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </summary>
+                        
+                        <div className="px-6 pb-6">
+                          <div className="bg-white rounded-xl p-6 border border-gray-200">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              {/* Colors */}
+                              <div>
+                                <h4 className="font-medium text-gray-900 mb-3">Brand Colors</h4>
+                                <div className="space-y-3">
+                                  <div className="flex items-center gap-3">
+                                    <div 
+                                      className="w-8 h-8 rounded-lg border border-gray-200"
+                                      style={{ backgroundColor: `#${dashboardData.brandGuidelines.color}` }}
+                                    ></div>
+                                    <div>
+                                      <p className="font-medium text-gray-900">Primary</p>
+                                      <p className="text-sm text-gray-500 font-mono">#{dashboardData.brandGuidelines.color}</p>
+                                    </div>
+                                  </div>
+                                  {dashboardData.brandGuidelines.secondary_color && (
+                                    <div className="flex items-center gap-3">
+                                      <div 
+                                        className="w-8 h-8 rounded-lg border border-gray-200"
+                                        style={{ backgroundColor: `#${dashboardData.brandGuidelines.secondary_color}` }}
+                                      ></div>
+                                      <div>
+                                        <p className="font-medium text-gray-900">Secondary</p>
+                                        <p className="text-sm text-gray-500 font-mono">#{dashboardData.brandGuidelines.secondary_color}</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Logo */}
+                              {dashboardData.brandGuidelines.logo_url && (
+                                <div>
+                                  <h4 className="font-medium text-gray-900 mb-3">Company Logo</h4>
+                                  <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-center">
+                                    <img 
+                                      src={dashboardData.brandGuidelines.logo_url} 
+                                      alt="Company logo"
+                                      className="max-h-16 object-contain"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none'
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </details>
                     </div>
                   )}
                 </div>
