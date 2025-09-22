@@ -124,6 +124,62 @@ fastify.get('/api/droplet/installation/:installationId', async (request, reply) 
   }
 });
 
+// Get brand guidelines for an installation
+fastify.get('/api/droplet/brand-guidelines/:installationId', async (request, reply) => {
+  try {
+    const { installationId } = request.params as { installationId: string };
+    const { fluid_api_key } = request.query as { fluid_api_key: string };
+
+    fastify.log.info(`Brand guidelines request for installation: ${installationId}, API key: ${fluid_api_key?.substring(0, 10)}...`);
+
+    if (!fluid_api_key) {
+      fastify.log.warn('Brand guidelines request missing fluid_api_key');
+      return reply.status(400).send({ error: 'Fluid API key required' });
+    }
+
+    // Validate the authentication token format
+    if (!fluid_api_key.startsWith('dit_') && !fluid_api_key.startsWith('cdrtkn_')) {
+      fastify.log.warn(`Invalid API key format: ${fluid_api_key.substring(0, 10)}...`);
+      return reply.status(400).send({ error: 'Invalid authentication token format' });
+    }
+
+    // Find the installation
+    const installation = await prisma.installation.findUnique({
+      where: { fluidId: installationId },
+      include: { company: true }
+    });
+
+    if (!installation) {
+      fastify.log.warn(`Installation not found for brand guidelines: ${installationId}`);
+      return reply.status(404).send({ error: 'Installation not found' });
+    }
+
+    if (!installation.isActive) {
+      fastify.log.warn(`Installation inactive for brand guidelines: ${installationId}`);
+      return reply.status(403).send({ error: 'Installation is inactive' });
+    }
+
+    // TODO: In a real implementation, you would fetch brand guidelines from Fluid API
+    // For now, we'll return basic company information as brand guidelines
+    const brandGuidelines = {
+      name: installation.company.name,
+      logo_url: installation.company.logoUrl,
+      color: '#2563eb', // Default blue, in real implementation this would come from Fluid API
+      secondary_color: '#1d4ed8'
+    };
+
+    const result = {
+      data: brandGuidelines
+    };
+
+    fastify.log.info(`Returning brand guidelines for: ${installation.company.name}`);
+    return result;
+  } catch (error) {
+    fastify.log.error(error);
+    return reply.status(500).send({ error: 'Internal server error' });
+  }
+});
+
 // Get company dashboard data
 fastify.get('/api/droplet/dashboard/:installationId', async (request, reply) => {
   try {
