@@ -13,6 +13,7 @@ interface DashboardData {
   companyName: string
   logoUrl?: string
   installationId: string
+  authenticationToken?: string // cdrtkn_ token for company API access
   brandGuidelines?: BrandGuidelines
 }
 
@@ -288,7 +289,7 @@ export function DropletDashboard() {
                 Your Fluid droplet is now active and ready to use.
               </p>
               <div 
-                className="rounded-lg p-6 text-sm text-gray-700 max-w-md mx-auto"
+                className="rounded-lg p-6 text-sm text-gray-700 max-w-2xl mx-auto"
                 style={{
                   backgroundColor: dashboardData?.brandGuidelines?.color 
                     ? `${formatColor(dashboardData.brandGuidelines.color)}10` 
@@ -298,7 +299,7 @@ export function DropletDashboard() {
                     : '#e5e7eb'
                 }}
               >
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <p><strong>Company:</strong> {dashboardData?.brandGuidelines?.name || dashboardData?.companyName}</p>
                   <p><strong>Installation ID:</strong> {dashboardData?.installationId}</p>
                   <p><strong>Status:</strong> 
@@ -313,6 +314,30 @@ export function DropletDashboard() {
                       Active
                     </span>
                   </p>
+                  
+                  {/* Authentication Tokens */}
+                  <div className="border-t pt-3 mt-3">
+                    <h4 className="font-semibold text-gray-900 mb-2">Authentication Tokens</h4>
+                    <div className="space-y-2">
+                      <div>
+                        <p className="font-medium text-xs text-gray-600">Droplet Token (dit_):</p>
+                        <p className="text-xs font-mono bg-gray-100 p-2 rounded border break-all">
+                          {fluidApiKey || 'Not available'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">For droplet authentication</p>
+                      </div>
+                      
+                      {dashboardData?.authenticationToken && (
+                        <div>
+                          <p className="font-medium text-xs text-gray-600">Company Token (cdrtkn_):</p>
+                          <p className="text-xs font-mono bg-gray-100 p-2 rounded border break-all">
+                            {dashboardData.authenticationToken}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">For company API access (create orders, sync data, etc.)</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
