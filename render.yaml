@@ -11,11 +11,11 @@ services:
     envVars:
       # Backend API Configuration
       - key: VITE_API_BASE_URL
-        sync: false  # Set to your backend service URL in Render dashboard
+        value: https://droplet-backend-go5d.onrender.com
       
       # Fluid Platform Configuration
       - key: VITE_FLUID_API_URL
-        sync: false  # Set to your backend service URL in Render dashboard
+        value: https://droplet-backend-go5d.onrender.com
       - key: VITE_FLUID_ENVIRONMENT
         value: production
       
