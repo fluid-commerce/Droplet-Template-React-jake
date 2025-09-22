@@ -1,0 +1,41 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Simple models for Fluid droplet
+model Company {
+  id            String   @id @default(cuid())
+  fluidId       String   @unique // Fluid company ID
+  name          String
+  logoUrl       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  installations Installation[]
+  
+  @@map("companies")
+}
+
+model Installation {
+  id            String   @id @default(cuid())
+  companyId     String
+  fluidId       String   @unique // Fluid installation ID
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@map("installations")
+}

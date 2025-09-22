@@ -1,29 +1,27 @@
 {
-  "name": "backend",
+  "name": "dropletguide(fluid)",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/index.js",
+  "main": "index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "tsx watch src/index.ts",
+    "dev": "concurrently \"npm run dev:frontend --silent\" \"npm run dev:backend --silent\"",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "npm --prefix frontend run build",
+    "build:backend": "npm --prefix backend run build",
+    "start:backend": "npm --prefix backend run start",
+    "prisma:generate": "cd database && npx prisma generate",
+    "prisma:push": "cd database && npx prisma db push",
+    "prisma:studio": "cd database && npx prisma studio",
+    "db:migrate": "npm --prefix database run migrate:dev",
+    "db:studio": "npm --prefix database run studio",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "@fastify/cors": "^11.1.0",
-    "@fastify/helmet": "^13.0.1",
-    "@prisma/client": "^6.16.2",
-    "dotenv": "^17.2.2",
-    "fastify": "^5.6.1",
-    "prisma": "^6.16.2"
-  },
   "devDependencies": {
-    "@types/node": "^24.5.2",
-    "nodemon": "^3.1.10",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
+    "concurrently": "^9.2.1"
   }
 }

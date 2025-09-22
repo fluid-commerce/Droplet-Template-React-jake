@@ -1,0 +1,89 @@
+# Render deployment configuration for Fluid Droplet Template
+
+services:
+  # Frontend service (React app)
+  - type: web
+    name: droplet-frontend
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      # Backend API Configuration
+      - key: VITE_API_BASE_URL
+        sync: false  # Set to your backend service URL in Render dashboard
+      
+      # Fluid Platform Configuration
+      - key: VITE_FLUID_API_URL
+        sync: false  # Set to your backend service URL in Render dashboard
+      - key: VITE_FLUID_ENVIRONMENT
+        value: production
+      
+      # Optional: Custom configuration
+      - key: VITE_APP_NAME
+        sync: false  # Set your app name in Render dashboard
+      - key: VITE_APP_VERSION
+        sync: false  # Set your app version in Render dashboard
+
+  # Backend service (Node.js API)
+  - type: web
+    name: droplet-backend
+    env: node
+    buildCommand: npm install && npm run build:backend
+    startCommand: npm run start:backend
+    # Note: Run migrations manually before deploying
+    # npm run migrate (from project root)
+    envVars:
+      # Server Configuration
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      
+      # Frontend URL (for CORS)
+      - key: FRONTEND_URL
+        sync: false  # Set to your frontend service URL in Render dashboard
+      
+      # Fluid Platform Configuration (Builder's API Key)
+      - key: FLUID_API_KEY
+        sync: false  # Set this in Render dashboard - YOUR builder API key
+      - key: DROPLET_ID
+        sync: false  # Set your droplet UUID in Render dashboard
+      - key: FLUID_API_URL
+        value: https://api.fluid.app
+      - key: FLUID_WEBHOOK_SECRET
+        sync: false  # Set this in Render dashboard
+      
+      # External Service API Credentials (for connecting to external services)
+      # Add your own external service API keys here as needed
+      # Examples (uncomment and set in Render dashboard if using these services):
+      # - key: SHOPIFY_API_KEY
+      #   sync: false
+      # - key: STRIPE_API_KEY
+      #   sync: false
+      
+      # Database Configuration (will be set automatically by Render)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: droplet-db
+          property: connectionString
+      
+      # Logging
+      - key: LOG_LEVEL
+        value: info
+      
+      # Security (auto-generated)
+      - key: JWT_SECRET
+        generateValue: true
+      
+      # Optional: External Service URLs
+      - key: EXTERNAL_SERVICE_BASE_URL
+        sync: false  # Set your external service API URL in Render dashboard
+      - key: WEBHOOK_BASE_URL
+        sync: false  # Set to your backend service URL in Render dashboard
+
+databases:
+  # PostgreSQL database for storing configurations and data
+  - name: droplet-db
+    databaseName: droplet_db
+    user: droplet_user
+    plan: free  # Change to 'starter' or 'standard' for production
