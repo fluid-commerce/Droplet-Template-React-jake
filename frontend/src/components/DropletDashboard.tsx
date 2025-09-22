@@ -112,10 +112,11 @@ export function DropletDashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <h3 className="text-xl font-semibold text-gray-800">
+          <div className="w-20 h-20 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-6"></div>
+          <h3 className="text-2xl font-semibold text-gray-800">
             Loading Dashboard...
           </h3>
+          <p className="text-gray-600 mt-2">Please wait while we set up your droplet</p>
         </div>
       </div>
     )
@@ -127,20 +128,20 @@ export function DropletDashboard() {
                          error.includes('Missing Fluid API key')
     
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-lg mx-auto bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="w-14 h-14 bg-red-50 border border-red-100 rounded-xl flex items-center justify-center mx-auto mb-5">
-            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8 text-center">
+          <div className="w-16 h-16 bg-red-50 border border-red-100 rounded-xl flex items-center justify-center mx-auto mb-6">
+            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Connection Error</h2>
-          <p className="text-gray-600 mb-5 text-sm">{error}</p>
+          <h2 className="text-xl font-semibold text-gray-900 mb-3">Connection Error</h2>
+          <p className="text-gray-600 mb-6 text-base">{error}</p>
           
           {isAccessError && (
-            <div className="bg-blue-50 rounded-lg p-4 mb-5 text-left">
-              <h3 className="text-sm font-medium text-blue-900 mb-2">How to fix this:</h3>
-              <ul className="text-xs text-blue-800 space-y-1">
+            <div className="bg-blue-50 rounded-lg p-6 mb-6 text-left">
+              <h3 className="text-base font-medium text-blue-900 mb-3">How to fix this:</h3>
+              <ul className="text-sm text-blue-800 space-y-2">
                 <li>• Make sure you're accessing this through the Fluid platform</li>
                 <li>• If you just installed, try clicking the droplet again from your Fluid dashboard</li>
                 <li>• If the problem persists, try uninstalling and reinstalling the droplet</li>
@@ -150,7 +151,7 @@ export function DropletDashboard() {
           
           <button 
             onClick={() => window.location.reload()} 
-            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors text-base font-medium"
           >
             Try Again
           </button>
@@ -160,13 +161,13 @@ export function DropletDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Simple Header with Company Info */}
+    <div className="min-h-screen bg-gray-50">
+      {/* Full-width Header with Company Info */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="flex items-center gap-4">
+        <div className="w-full px-6 py-12">
+          <div className="flex items-center gap-6">
             {dashboardData?.logoUrl && (
-              <div className="w-16 h-16 rounded-xl p-2 shadow-lg bg-white/95 flex items-center justify-center">
+              <div className="w-20 h-20 rounded-xl p-3 shadow-lg bg-white/95 flex items-center justify-center">
                 <img 
                   src={dashboardData.logoUrl} 
                   alt={`${dashboardData.companyName} logo`}
@@ -179,34 +180,38 @@ export function DropletDashboard() {
               </div>
             )}
             <div>
-              <h1 className="text-3xl font-bold">
+              <h1 className="text-4xl font-bold">
                 {dashboardData?.companyName || 'Your Business'}
               </h1>
-              <p className="text-blue-100 text-sm mt-1">Welcome to your Fluid droplet</p>
+              <p className="text-blue-100 text-lg mt-2">Welcome to your Fluid droplet</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Simple Content Area */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Installation Successful!
-            </h2>
-            <p className="text-gray-600 mb-4">
-              Your Fluid droplet is now active and ready to use.
-            </p>
-            <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700">
-              <p><strong>Company:</strong> {dashboardData?.companyName}</p>
-              <p><strong>Installation ID:</strong> {dashboardData?.installationId}</p>
-              <p><strong>Status:</strong> Active</p>
+      {/* Full-width Content Area */}
+      <div className="w-full px-6 py-12">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+            <div className="text-center">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-3">
+                Installation Successful!
+              </h2>
+              <p className="text-gray-600 mb-6 text-lg">
+                Your Fluid droplet is now active and ready to use.
+              </p>
+              <div className="bg-gray-50 rounded-lg p-6 text-sm text-gray-700 max-w-md mx-auto">
+                <div className="space-y-2">
+                  <p><strong>Company:</strong> {dashboardData?.companyName}</p>
+                  <p><strong>Installation ID:</strong> {dashboardData?.installationId}</p>
+                  <p><strong>Status:</strong> <span className="text-green-600 font-medium">Active</span></p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
