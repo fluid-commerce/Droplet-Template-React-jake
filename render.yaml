@@ -5,7 +5,7 @@ services:
   - type: web
     name: droplet-frontend
     env: static
-    buildCommand: npm install && npm --prefix frontend install && npm run build:frontend
+    buildCommand: npm install && npm run build:frontend
     staticPublishPath: ./frontend/dist
     envVars:
       # Backend API Configuration
@@ -28,7 +28,7 @@ services:
   - type: web
     name: droplet-backend
     env: node
-    buildCommand: npm install && npm --prefix backend install && npm run build:backend
+    buildCommand: npm install && npm run build:backend
     startCommand: npm run start:backend
     # Note: Run migrations manually before deploying
     # npm run migrate (from project root)

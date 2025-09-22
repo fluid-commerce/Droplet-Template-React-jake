@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "workspaces": [
+    "frontend",
+    "backend",
+    "database"
+  ],
   "scripts": {
     "dev": "concurrently \"npm run dev:frontend --silent\" \"npm run dev:backend --silent\"",
     "dev:frontend": "npm --prefix frontend run dev",
