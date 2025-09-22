@@ -315,29 +315,19 @@ export function DropletDashboard() {
                     </span>
                   </p>
                   
-                  {/* Authentication Tokens */}
-                  <div className="border-t pt-3 mt-3">
-                    <h4 className="font-semibold text-gray-900 mb-2">Authentication Tokens</h4>
-                    <div className="space-y-2">
+                  {/* Company Authentication Token */}
+                  {dashboardData?.authenticationToken && (
+                    <div className="border-t pt-3 mt-3">
+                      <h4 className="font-semibold text-gray-900 mb-2">Company API Token</h4>
                       <div>
-                        <p className="font-medium text-xs text-gray-600">Droplet Token (dit_):</p>
+                        <p className="font-medium text-xs text-gray-600">Authentication Token:</p>
                         <p className="text-xs font-mono bg-gray-100 p-2 rounded border break-all">
-                          {fluidApiKey || 'Not available'}
+                          {dashboardData.authenticationToken}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">For droplet authentication</p>
+                        <p className="text-xs text-gray-500 mt-1">Use this token to authenticate API calls on behalf of the company (create orders, sync data, etc.)</p>
                       </div>
-                      
-                      {dashboardData?.authenticationToken && (
-                        <div>
-                          <p className="font-medium text-xs text-gray-600">Company Token (cdrtkn_):</p>
-                          <p className="text-xs font-mono bg-gray-100 p-2 rounded border break-all">
-                            {dashboardData.authenticationToken}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">For company API access (create orders, sync data, etc.)</p>
-                        </div>
-                      )}
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
