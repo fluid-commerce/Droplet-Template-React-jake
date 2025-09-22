@@ -1,7 +1,5 @@
-/* Tailwind CSS base styles */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind CSS v4 base styles */
+@import "tailwindcss";
 
 /* Minimal global styles - let Tailwind handle everything */
 body {
