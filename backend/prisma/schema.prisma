@@ -28,14 +28,15 @@ model Company {
 }
 
 model Installation {
-  id            String   @id @default(cuid())
-  companyId     String
-  fluidId       String   @unique // Fluid installation ID
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  companyId           String
+  fluidId             String   @unique // Fluid installation ID
+  authenticationToken String?  // cdrtkn_ token for company API access
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
   
-  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company             Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   
   @@map("installations")
 }

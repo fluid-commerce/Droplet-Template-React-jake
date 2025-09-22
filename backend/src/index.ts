@@ -219,6 +219,73 @@ fastify.get('/api/droplet/brand-guidelines/:installationId', async (request, rep
   }
 });
 
+// Get company authentication token for API operations
+fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) => {
+  try {
+    const { installationId } = request.params as { installationId: string };
+    const { fluid_api_key } = request.query as { fluid_api_key: string };
+
+    fastify.log.info(`Auth token request for installation: ${installationId}, API key: ${fluid_api_key?.substring(0, 10)}...`);
+
+    if (!fluid_api_key) {
+      fastify.log.warn('Auth token request missing fluid_api_key');
+      return reply.status(400).send({ error: 'Fluid API key required' });
+    }
+
+    // Validate the authentication token format
+    if (!fluid_api_key.startsWith('dit_') && !fluid_api_key.startsWith('cdrtkn_')) {
+      fastify.log.warn(`Invalid API key format: ${fluid_api_key.substring(0, 10)}...`);
+      return reply.status(400).send({ error: 'Invalid authentication token format' });
+    }
+
+    // Find the installation using raw SQL to handle the new column
+    const installation = await prisma.$queryRaw`
+      SELECT 
+        i.id,
+        i."fluidId",
+        i."isActive",
+        i."authenticationToken",
+        c.name as "companyName"
+      FROM installations i
+      JOIN companies c ON i."companyId" = c.id
+      WHERE i."fluidId" = ${installationId}
+    ` as any[];
+
+    if (!installation || installation.length === 0) {
+      fastify.log.warn(`Installation not found for auth token: ${installationId}`);
+      return reply.status(404).send({ error: 'Installation not found' });
+    }
+
+    const installData = installation[0];
+
+    if (!installData.isActive) {
+      fastify.log.warn(`Installation inactive for auth token: ${installationId}`);
+      return reply.status(403).send({ error: 'Installation is inactive' });
+    }
+
+    if (!installData.authenticationToken) {
+      fastify.log.warn(`No authentication token found for installation: ${installationId}`);
+      return reply.status(404).send({ error: 'Authentication token not available' });
+    }
+
+    const result = {
+      data: {
+        installationId: installData.fluidId,
+        companyName: installData.companyName,
+        authenticationToken: installData.authenticationToken,
+        tokenType: 'cdrtkn_',
+        usage: 'Use this token to authenticate API calls on behalf of the company'
+      }
+    };
+
+    fastify.log.info(`Returning auth token for: ${installData.companyName}`);
+    return result;
+  } catch (error) {
+    fastify.log.error(error);
+    return reply.status(500).send({ error: 'Internal server error' });
+  }
+});
+
 // Get company dashboard data
 fastify.get('/api/droplet/dashboard/:installationId', async (request, reply) => {
   try {
@@ -238,36 +305,47 @@ fastify.get('/api/droplet/dashboard/:installationId', async (request, reply) => 
       return reply.status(400).send({ error: 'Invalid authentication token format' });
     }
 
-    // Find the installation and company
-    const installation = await prisma.installation.findUnique({
-      where: { fluidId: installationId },
-      include: { company: true }
-    });
+    // Find the installation and company using raw SQL
+    const installation = await prisma.$queryRaw`
+      SELECT 
+        i.id,
+        i."fluidId",
+        i."isActive",
+        i."authenticationToken",
+        c.name as "companyName",
+        c."logoUrl"
+      FROM installations i
+      JOIN companies c ON i."companyId" = c.id
+      WHERE i."fluidId" = ${installationId}
+    ` as any[];
 
-    fastify.log.info(`Installation lookup result: ${installation ? 'found' : 'not found'}`);
-    if (installation) {
-      fastify.log.info(`Installation active: ${installation.isActive}, company: ${installation.company.name}`);
+    fastify.log.info(`Installation lookup result: ${installation && installation.length > 0 ? 'found' : 'not found'}`);
+    if (installation && installation.length > 0) {
+      fastify.log.info(`Installation active: ${installation[0].isActive}, company: ${installation[0].companyName}`);
     }
 
-    if (!installation) {
+    if (!installation || installation.length === 0) {
       fastify.log.warn(`Installation not found: ${installationId}`);
       return reply.status(404).send({ error: 'Installation not found' });
     }
 
-    if (!installation.isActive) {
+    const installData = installation[0];
+
+    if (!installData.isActive) {
       fastify.log.warn(`Installation inactive: ${installationId}`);
       return reply.status(403).send({ error: 'Installation is inactive' });
     }
 
     const result = {
       data: {
-        companyName: installation.company.name,
-        logoUrl: installation.company.logoUrl,
-        installationId: installation.fluidId
+        companyName: installData.companyName,
+        logoUrl: installData.logoUrl,
+        installationId: installData.fluidId,
+        authenticationToken: installData.authenticationToken // Include the cdrtkn_ token
       }
     };
 
-    fastify.log.info(`Returning dashboard data for: ${installation.company.name}`);
+    fastify.log.info(`Returning dashboard data for: ${installData.companyName}`);
     return result;
   } catch (error) {
     fastify.log.error(error);
@@ -303,21 +381,21 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
         }
       });
 
-      // Create or update installation - always set to active for install events
-      const installation = await prisma.installation.upsert({
-        where: { fluidId: company.droplet_installation_uuid },
-        update: {
-          isActive: true,
-          updatedAt: new Date()
-        },
-        create: {
-          fluidId: company.droplet_installation_uuid,
-          companyId: companyRecord.id,
-          isActive: true
-        }
-      });
+      // Create or update installation using raw SQL to handle the new column
+      const installation = await prisma.$queryRaw`
+        INSERT INTO installations (id, "companyId", "fluidId", "authenticationToken", "isActive", "createdAt", "updatedAt")
+        VALUES (${crypto.randomUUID()}, ${companyRecord.id}, ${company.droplet_installation_uuid}, ${company.authentication_token}, true, NOW(), NOW())
+        ON CONFLICT ("fluidId") 
+        DO UPDATE SET 
+          "isActive" = true,
+          "authenticationToken" = ${company.authentication_token},
+          "updatedAt" = NOW()
+        RETURNING id, "fluidId", "isActive", "authenticationToken"
+      ` as any[];
 
-      fastify.log.info(`Installation created/updated for company: ${company.name}, active: ${installation.isActive}`);
+      const installData = installation[0];
+
+      fastify.log.info(`Installation created/updated for company: ${company.name}, active: ${installData.isActive}`);
     }
 
     // Handle uninstallation events
