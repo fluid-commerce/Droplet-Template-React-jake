@@ -81,6 +81,8 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
     if (body.event === 'installed') {
       const { company } = body;
       
+      fastify.log.info(`Processing installation event for: ${company.droplet_installation_uuid}`);
+      
       // Create or update company
       const companyRecord = await prisma.company.upsert({
         where: { fluidId: company.fluid_company_id.toString() },
@@ -96,8 +98,8 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
         }
       });
 
-      // Create installation
-      await prisma.installation.upsert({
+      // Create or update installation - always set to active for install events
+      const installation = await prisma.installation.upsert({
         where: { fluidId: company.droplet_installation_uuid },
         update: {
           isActive: true,
@@ -110,19 +112,21 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
         }
       });
 
-      fastify.log.info(`Installation created for company: ${company.name}`);
+      fastify.log.info(`Installation created/updated for company: ${company.name}, active: ${installation.isActive}`);
     }
 
     // Handle uninstallation events
     if (body.event === 'uninstalled') {
       const { company } = body;
       
-      await prisma.installation.update({
+      fastify.log.info(`Processing uninstallation event for: ${company.droplet_installation_uuid}`);
+      
+      const result = await prisma.installation.updateMany({
         where: { fluidId: company.droplet_installation_uuid },
         data: { isActive: false }
       });
 
-      fastify.log.info(`Installation deactivated: ${company.droplet_installation_uuid}`);
+      fastify.log.info(`Installation deactivated: ${company.droplet_installation_uuid}, updated: ${result.count} records`);
     }
 
     return { status: 'ok' };
