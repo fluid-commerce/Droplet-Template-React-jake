@@ -14,6 +14,15 @@ fastify.register(cors, {
   credentials: true
 });
 
+// Root route
+fastify.get('/', async (request, reply) => {
+  return { 
+    message: 'Fluid Droplet Backend API', 
+    status: 'running',
+    timestamp: new Date().toISOString() 
+  };
+});
+
 // Health check route
 fastify.get('/health', async (request, reply) => {
   return { status: 'ok', timestamp: new Date().toISOString() };
@@ -62,7 +71,7 @@ fastify.get('/api/droplet/dashboard/:installationId', async (request, reply) => 
 });
 
 // Webhook endpoint for Fluid platform events
-fastify.post('/api/webhooks/fluid', async (request, reply) => {
+fastify.post('/api/webhook/fluid', async (request, reply) => {
   try {
     const body = request.body as any;
     fastify.log.info('Received webhook:', body);
