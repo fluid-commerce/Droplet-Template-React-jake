@@ -28,7 +28,7 @@ services:
   - type: web
     name: droplet-backend
     env: node
-    buildCommand: cd backend && npm install && npm run build
+    buildCommand: npm install && cd backend && npm install && npm run build
     startCommand: npm run start:backend
     # Force deployment with npm workspaces and TypeScript fix
     # Note: Run migrations manually before deploying
