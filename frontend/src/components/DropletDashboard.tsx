@@ -23,17 +23,27 @@ export function DropletDashboard() {
       console.log('🔍 Installation ID:', installationId)
       console.log('🔍 Fluid API Key:', fluidApiKey)
       console.log('🔍 API Base URL:', import.meta.env.VITE_API_BASE_URL)
+      console.log('🔍 Current URL:', window.location.href)
+      console.log('🔍 Search params:', window.location.search)
       
+      // Check if we're missing both parameters - this indicates we're not in a proper Fluid embed
+      if (!installationId && !fluidApiKey) {
+        console.log('⚠️ No Fluid parameters found - this appears to be a direct access')
+        setError('This droplet must be accessed through the Fluid platform. Please install it from the Fluid marketplace.')
+        setIsLoading(false)
+        return
+      }
+
       if (!installationId) {
         console.log('❌ Missing installation ID')
-        setError('Missing installation ID')
+        setError('Missing installation ID. Please try reinstalling the droplet from the Fluid marketplace.')
         setIsLoading(false)
         return
       }
 
       if (!fluidApiKey) {
         console.log('❌ Missing Fluid API key')
-        setError('Missing Fluid API key')
+        setError('Missing Fluid API key. Please try reinstalling the droplet from the Fluid marketplace.')
         setIsLoading(false)
         return
       }
@@ -93,9 +103,13 @@ export function DropletDashboard() {
   }
 
   if (error) {
+    const isAccessError = error.includes('This droplet must be accessed through the Fluid platform') || 
+                         error.includes('Missing installation ID') || 
+                         error.includes('Missing Fluid API key')
+    
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8 text-center">
+        <div className="max-w-lg mx-auto bg-white rounded-lg shadow-lg p-8 text-center">
           <div className="w-14 h-14 bg-red-50 border border-red-100 rounded-xl flex items-center justify-center mx-auto mb-5">
             <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -103,6 +117,18 @@ export function DropletDashboard() {
           </div>
           <h2 className="text-lg font-semibold text-gray-900 mb-2">Connection Error</h2>
           <p className="text-gray-600 mb-5 text-sm">{error}</p>
+          
+          {isAccessError && (
+            <div className="bg-blue-50 rounded-lg p-4 mb-5 text-left">
+              <h3 className="text-sm font-medium text-blue-900 mb-2">How to fix this:</h3>
+              <ul className="text-xs text-blue-800 space-y-1">
+                <li>• Make sure you're accessing this through the Fluid platform</li>
+                <li>• If you just installed, try clicking the droplet again from your Fluid dashboard</li>
+                <li>• If the problem persists, try uninstalling and reinstalling the droplet</li>
+              </ul>
+            </div>
+          )}
+          
           <button 
             onClick={() => window.location.reload()} 
             className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"

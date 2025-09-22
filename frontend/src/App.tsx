@@ -7,6 +7,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<DropletDashboard />} />
+        <Route path="/dashboard" element={<DropletDashboard />} />
         <Route path="*" element={<DropletDashboard />} />
       </Routes>
     </Router>
