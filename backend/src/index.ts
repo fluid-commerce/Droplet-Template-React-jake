@@ -277,7 +277,7 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
         installationId: installData.fluidId,
         companyName: installData.companyName,
         authenticationToken: installData.authenticationToken,
-        tokenType: 'cdrtkn_',
+        tokenType: 'dit_',
         usage: 'Use this token to authenticate API calls on behalf of the company'
       }
     };
@@ -362,7 +362,7 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
         companyName: installData.companyName,
         logoUrl: installData.logoUrl,
         installationId: installData.fluidId,
-        authenticationToken: installData.authenticationToken, // Include the cdrtkn_ token
+        authenticationToken: installData.authenticationToken, // Include the dit_ token
         fluidShop: installData.fluidShop // Include the company's Fluid shop domain
       }
     };
@@ -388,8 +388,7 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
       // info logs removed
 
       if (company.authentication_token?.startsWith('dit_')) {
-        fastify.log.warn('⚠️ WARNING: Received dit_ token from Fluid webhook, but docs suggest we should get cdrtkn_ for company API access');
-        // info logs removed
+        fastify.log.info('✅ Received dit_ token from Fluid webhook - this is the correct token type for droplet installations');
       }
 
 
@@ -439,11 +438,11 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
 
             if (authToken) {
               companyApiToken = authToken;
-              if (authToken.startsWith('cdrtkn_')) {
-                fastify.log.info(`✅ Successfully obtained cdrtkn_ token: ${authToken.substring(0, 15)}...`);
-              } else if (authToken.startsWith('dit_')) {
-                fastify.log.info(`✅ Got dit_ token from Fluid API: ${authToken.substring(0, 15)}...`);
-                fastify.log.info(`📝 Note: Fluid docs mention cdrtkn_ but we received dit_ - this may be the correct token format now`);
+              if (authToken.startsWith('dit_')) {
+                fastify.log.info(`✅ Successfully obtained dit_ token: ${authToken.substring(0, 15)}...`);
+                fastify.log.info(`📝 dit_ tokens are the correct format for droplet installations`);
+              } else if (authToken.startsWith('cdrtkn_')) {
+                fastify.log.info(`✅ Got cdrtkn_ token from Fluid API: ${authToken.substring(0, 15)}...`);
               } else {
                 fastify.log.warn(`⚠️ Unknown token format: ${authToken.substring(0, 10)}...`);
               }

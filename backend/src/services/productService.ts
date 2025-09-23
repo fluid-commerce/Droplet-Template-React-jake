@@ -82,12 +82,13 @@ export class ProductService {
     const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
 
     try {
-      // Try multiple API endpoints to find the correct one
+      // Use working API endpoints (tested with dit_ tokens)
+      // dit_ tokens work with /api/v1/products (not /api/company/v1/products)
       const possibleEndpoints = [
-        `https://${companyShop}.fluid.app/api/company/v1/products?${queryParams}`, // Original
-        `https://app.nexui.com/api/company/v1/products?company=${companyShop}&${queryParams}`, // New API base from dashboard
-        `https://app.nexui.com/api/companies/${companyShop}/products?${queryParams}`, // Alternative structure
-        `https://api.fluid.app/api/company/v1/products?company=${companyShop}&${queryParams}` // Global API fallback
+        `https://${companyShop}.fluid.app/api/v1/products?${queryParams}`, // Working: company subdomain
+        `https://fluid.app/api/v1/products?company=${companyShop}&${queryParams}`, // Working: global API
+        `https://${companyShop}.fluid.app/api/company/v1/products?${queryParams}`, // Fallback: original
+        `https://api.fluid.app/api/v1/products?company=${companyShop}&${queryParams}` // Fallback: global v1
       ];
 
       let response = null;
@@ -444,11 +445,12 @@ export class ProductService {
     const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
 
     try {
-      // Try multiple API endpoints for orders
+      // Try multiple API endpoints for orders (dit_ tokens work with v1 API)
       const possibleEndpoints = [
-        `https://${companyShop}.fluid.app/api/v202506/orders?${queryParams}`, // Latest version
-        `https://${companyShop}.fluid.app/api/v2/orders?${queryParams}`, // v2 version
-        `https://api.fluid.app/api/v2/orders?company=${companyShop}&${queryParams}` // global API
+        `https://${companyShop}.fluid.app/api/v1/orders?${queryParams}`, // Working: v1 API
+        `https://fluid.app/api/v1/orders?company=${companyShop}&${queryParams}`, // Working: global v1 API
+        `https://${companyShop}.fluid.app/api/v202506/orders?${queryParams}`, // Fallback: Latest version
+        `https://${companyShop}.fluid.app/api/v2/orders?${queryParams}` // Fallback: v2 version
       ];
 
       let response = null;

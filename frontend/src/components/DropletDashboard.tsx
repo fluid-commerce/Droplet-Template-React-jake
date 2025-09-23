@@ -14,7 +14,7 @@ interface DashboardData {
   companyName: string
   logoUrl?: string
   installationId: string
-  authenticationToken?: string // cdrtkn_ token for company API access
+  authenticationToken?: string // dit_ token for company API access
   brandGuidelines?: BrandGuidelines
   fluidShop?: string // Company's Fluid shop domain (e.g., "pokey.fluid.app")
 }
@@ -666,8 +666,8 @@ export function DropletDashboard() {
                         <div className="text-xs text-gray-600 bg-white rounded p-3 border border-gray-200">
                           <p className="font-medium text-gray-700 mb-1">How it works:</p>
                           <ul className="space-y-1 text-gray-600">
-                            <li>• Uses your company's authentication token (cdrtkn_)</li>
-                            <li>• Calls Fluid's /api/company/v1/products endpoint</li>
+                            <li>• Uses your company's authentication token (dit_)</li>
+                            <li>• Calls Fluid's /api/v1/products endpoint</li>
                             <li>• Stores products in your PostgreSQL database</li>
                             <li>• Displays them in a beautiful table below</li>
                           </ul>
