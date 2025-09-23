@@ -55,7 +55,7 @@ export async function productRoutes(fastify: FastifyInstance) {
       
       // Verify installation exists and is active
       const installationResult = await prisma.$queryRaw`
-        SELECT i.*, c.name as "companyName", c."logoUrl" as "companyLogoUrl", c."fluidShop", c."fluidApiKey"
+        SELECT i.*, c.name as "companyName", c."logoUrl" as "companyLogoUrl", c."fluidShop"
         FROM installations i
         JOIN companies c ON i."companyId" = c.id
         WHERE i."fluidId" = ${installationId} AND i."isActive" = true
@@ -73,16 +73,28 @@ export async function productRoutes(fastify: FastifyInstance) {
       }
 
       // Fetch product image from Fluid API
-      const imageUrl = await ProductService.fetchProductImages(
-        installation.fluidShop,
-        installation.fluidApiKey,
-        parseInt(productId)
-      )
-      
-      return reply.send({
-        success: true,
-        imageUrl: imageUrl
-      })
+      try {
+        console.log(`🔄 Backend: Fetching image for product ${productId} from Fluid API`)
+        const imageUrl = await ProductService.fetchProductImages(
+          installation.fluidShop,
+          installation.authenticationToken,
+          parseInt(productId)
+        )
+        
+        console.log(`✅ Backend: Got image URL for product ${productId}:`, imageUrl)
+        
+        return reply.send({
+          success: true,
+          imageUrl: imageUrl
+        })
+      } catch (error) {
+        console.error(`❌ Backend: Error fetching image for product ${productId}:`, error)
+        return reply.send({
+          success: false,
+          imageUrl: null,
+          message: 'Failed to fetch product image from Fluid API'
+        })
+      }
     } catch (error) {
       fastify.log.error(error)
       return reply.status(500).send({

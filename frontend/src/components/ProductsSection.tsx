@@ -429,32 +429,34 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
     }
   }
 
-  // Fetch product images for order items
+  // Fetch product images for order items (with rate limiting)
   const fetchOrderItemImages = async (orderItems: any[]) => {
-    const imagePromises = orderItems.map(async (item) => {
-      // Try to find product ID in the item data
-      const productId = item.product_id || item.id || item.sku
-      if (!productId) return null
-
-      try {
-        const response = await apiClient.get(`/api/products/${installationId}/image/${productId}`)
-        if (response.data.success && response.data.imageUrl) {
-          return { productId, imageUrl: response.data.imageUrl }
-        }
-      } catch (error) {
-        console.log(`Failed to fetch image for product ${productId}:`, error)
-      }
-      return null
-    })
-
-    const results = await Promise.all(imagePromises)
+    // Limit to first 5 items to prevent resource exhaustion
+    const limitedItems = orderItems.slice(0, 5)
+    
     const imageMap: Record<string, string> = {}
     
-    results.forEach(result => {
-      if (result) {
-        imageMap[result.productId] = result.imageUrl
+    // Process items sequentially with delay to prevent overwhelming the server
+    for (const item of limitedItems) {
+      const productId = item.product_id || item.id || item.sku
+      if (!productId) continue
+
+      try {
+        console.log(`🔄 Fetching image for product ${productId}...`)
+        const response = await apiClient.get(`/api/products/${installationId}/image/${productId}`)
+        if (response.data.success && response.data.imageUrl) {
+          imageMap[productId] = response.data.imageUrl
+          console.log(`✅ Got image for product ${productId}:`, response.data.imageUrl)
+        } else {
+          console.log(`⚠️ No image found for product ${productId}`)
+        }
+      } catch (error) {
+        console.log(`❌ Failed to fetch image for product ${productId}:`, error)
       }
-    })
+      
+      // Add small delay between requests
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
 
     setOrderItemImages(prev => ({ ...prev, ...imageMap }))
   }
