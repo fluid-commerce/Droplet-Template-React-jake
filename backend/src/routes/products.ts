@@ -94,9 +94,12 @@ export async function productRoutes(fastify: FastifyInstance) {
         const fluidShop = (installation as any).fluidShop
         const companyShop = fluidShop?.replace?.('.fluid.app', '') || fluidShop
 
+        // Use company API key if available, fallback to dit token
+        const tokenToUse = (installation as any).companyApiKey || (installation as any).authenticationToken
+
         const imageUrl = await ProductService.fetchProductImages(
           companyShop,
-          (installation as any).authenticationToken,
+          tokenToUse,
           parseInt(productId)
         )
 
@@ -180,7 +183,8 @@ export async function productRoutes(fastify: FastifyInstance) {
       const syncResult = await ProductService.syncProductsFromFluid(
         installation.id,
         companyShop,
-        (installation as any).authenticationToken
+        (installation as any).authenticationToken,
+        (installation as any).companyApiKey
       )
 
       return reply.send({
@@ -247,10 +251,13 @@ export async function productRoutes(fastify: FastifyInstance) {
       // Extract subdomain (e.g., "pokey" from "pokey.fluid.app")
       const companyShop = fluidShop.replace('.fluid.app', '')
 
+      // Use company API key if available, fallback to dit token
+      const tokenToUse = (installation as any).companyApiKey || (installation as any).authenticationToken
+
       // Fetch products directly from Fluid API
       const fluidResponse = await ProductService.fetchProductsFromFluid(
         companyShop,
-        (installation as any).authenticationToken,
+        tokenToUse,
         1,
         10 // Limit to 10 for testing
       )
@@ -367,7 +374,8 @@ export async function productRoutes(fastify: FastifyInstance) {
       const syncResult = await ProductService.syncOrdersFromFluid(
         installation.id,
         companyShop,
-        (installation as any).authenticationToken
+        (installation as any).authenticationToken,
+        (installation as any).companyApiKey
       )
 
       return reply.send({

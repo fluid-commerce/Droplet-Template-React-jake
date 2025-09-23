@@ -198,9 +198,13 @@ export class ProductService {
   static async syncProductsFromFluid(
     installationId: string,
     companyShop: string,
-    authToken: string
+    authToken: string,
+    companyApiKey?: string
   ): Promise<{ synced: number; errors: number }> {
     try {
+      // Use company API key if available, fallback to dit token
+      const tokenToUse = companyApiKey || authToken
+
       // Fetch all products from Fluid (with pagination)
       let page = 1
       let hasMorePages = true
@@ -208,7 +212,7 @@ export class ProductService {
       let errorCount = 0
 
       while (hasMorePages) {
-        const fluidResponse = await this.fetchProductsFromFluid(companyShop, authToken, page, 50)
+        const fluidResponse = await this.fetchProductsFromFluid(companyShop, tokenToUse, page, 50)
         
         // Process each product
         for (const fluidProduct of fluidResponse.products) {
@@ -226,7 +230,7 @@ export class ProductService {
 
             // Fallback: fetch images from images endpoint only if not present
             if (!imageUrl) {
-              imageUrl = await ProductService.fetchProductImages(companyShop, authToken, fluidProduct.id)
+              imageUrl = await ProductService.fetchProductImages(companyShop, tokenToUse, fluidProduct.id)
             }
             
 
@@ -308,7 +312,8 @@ export class ProductService {
   static async syncOrdersFromFluid(
     installationId: string,
     companyShop: string,
-    authToken: string
+    authToken: string,
+    companyApiKey?: string
   ): Promise<{ synced: number; errors: number }> {
     try {
       // Fetch all orders from Fluid (with pagination)
