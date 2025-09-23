@@ -257,8 +257,14 @@ export class ProductService {
           meta: fluidResponse.meta,
           hasPagination: !!fluidResponse.meta.pagination,
           currentPage: fluidResponse.meta.current_page,
-          totalCount: fluidResponse.meta.total_count
+          totalCount: fluidResponse.meta.total_count,
+          paginationObject: fluidResponse.meta.pagination
         })
+        
+        // Log the first few order IDs to verify we're getting real data
+        if (fluidResponse.orders.length > 0) {
+          console.log(`📋 Sample order IDs:`, fluidResponse.orders.slice(0, 3).map(o => o.id))
+        }
         
         // Process each order
         for (const fluidOrder of fluidResponse.orders) {
@@ -301,14 +307,17 @@ export class ProductService {
         // Check if there are more pages
         if (fluidResponse.meta.pagination) {
           hasMorePages = page < fluidResponse.meta.pagination.total_pages
+          console.log(`🔄 Pagination logic (pagination object): page ${page} < ${fluidResponse.meta.pagination.total_pages} = ${hasMorePages}`)
           page++
         } else if (fluidResponse.meta.current_page && fluidResponse.meta.total_count) {
           // Fallback to current_page and total_count if pagination object doesn't exist
           const totalPages = Math.ceil(fluidResponse.meta.total_count / 50) // Assuming 50 per page
           hasMorePages = page < totalPages
+          console.log(`🔄 Pagination logic (fallback): page ${page} < ${totalPages} (total: ${fluidResponse.meta.total_count}) = ${hasMorePages}`)
           page++
         } else {
           hasMorePages = false
+          console.log(`🔄 Pagination logic (no pagination data): hasMorePages = false`)
         }
       }
 
