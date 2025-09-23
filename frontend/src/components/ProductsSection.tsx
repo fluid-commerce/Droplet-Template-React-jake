@@ -99,11 +99,43 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
   const [ordersMessage, setOrdersMessage] = useState<string | null>(null)
   const [companyName, setCompanyName] = useState<string>('')
   const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   // Helper function to format colors
   const formatColor = (color: string | null | undefined) => {
     if (!color) return undefined
     return color.startsWith('#') ? color : `#${color}`
+  }
+
+  // Pagination helpers
+  const getCurrentProducts = () => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    return products.slice(startIndex, endIndex)
+  }
+
+  const getCurrentOrders = () => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    return orders.slice(startIndex, endIndex)
+  }
+
+  const getTotalPages = () => {
+    const items = activeTab === 'products' ? products : orders
+    return Math.ceil(items.length / itemsPerPage)
+  }
+
+  const goToNextPage = () => {
+    if (currentPage < getTotalPages()) {
+      setCurrentPage(currentPage + 1)
+    }
+  }
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1)
+    }
   }
 
   // Fetch products from our database
@@ -223,6 +255,7 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
   }
 
   useEffect(() => {
+    setCurrentPage(1) // Reset to first page when switching tabs
     if (activeTab === 'products') {
       fetchProducts()
     } else if (activeTab === 'orders') {
@@ -256,7 +289,7 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">
-            {activeTab === 'products' ? 'Products' : 'Orders'} from {companyName}
+            Products and Orders from {companyName}
           </h3>
           <p className="text-sm text-gray-600">
             {activeTab === 'products' 
@@ -297,7 +330,7 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
           <button
             onClick={syncProducts}
             disabled={isSyncing || isSyncingOrders || isTestingOrders}
-            className="inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center px-3 py-1.5 text-white text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               backgroundColor: brandGuidelines?.color
                 ? formatColor(brandGuidelines.color)
@@ -306,12 +339,12 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
           >
             {isSyncing ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1.5"></div>
                 Syncing...
               </>
             ) : (
               <>
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 Sync Products
@@ -322,7 +355,7 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
           <button
             onClick={syncOrders}
             disabled={isSyncing || isSyncingOrders || isTestingOrders}
-            className="inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center px-3 py-1.5 text-white text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               backgroundColor: brandGuidelines?.color
                 ? formatColor(brandGuidelines.color)
@@ -331,12 +364,12 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
           >
             {isSyncingOrders ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1.5"></div>
                 Syncing...
               </>
             ) : (
               <>
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 Sync Orders
@@ -348,19 +381,19 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
         <button
           onClick={testOrders}
           disabled={isSyncing || isSyncingOrders || isTestingOrders}
-          className="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700"
+          className="inline-flex items-center px-3 py-1.5 bg-gray-600 text-white text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700"
         >
           {isTestingOrders ? (
             <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1.5"></div>
               Testing...
             </>
           ) : (
             <>
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Test Orders API
+              Sync Orders
             </>
           )}
         </button>
@@ -481,7 +514,7 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {products.map((product) => (
+                  {getCurrentProducts().map((product) => (
                     <tr key={product.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -558,6 +591,67 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
                 </tbody>
               </table>
             </div>
+            
+            {/* Pagination */}
+            {getTotalPages() > 1 && (
+              <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                <div className="flex-1 flex justify-between sm:hidden">
+                  <button
+                    onClick={goToPreviousPage}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={goToNextPage}
+                    disabled={currentPage === getTotalPages()}
+                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Showing{' '}
+                      <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span>
+                      {' '}to{' '}
+                      <span className="font-medium">
+                        {Math.min(currentPage * itemsPerPage, products.length)}
+                      </span>
+                      {' '}of{' '}
+                      <span className="font-medium">{products.length}</span>
+                      {' '}results
+                    </p>
+                  </div>
+                  <div>
+                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                      <button
+                        onClick={goToPreviousPage}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span className="sr-only">Previous</span>
+                        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={goToNextPage}
+                        disabled={currentPage === getTotalPages()}
+                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span className="sr-only">Next</span>
+                        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
@@ -567,33 +661,9 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
               </svg>
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No products yet</h3>
-            <p className="text-gray-600 mb-4">
-              Sync products from Fluid to see them here
+            <p className="text-gray-600">
+              Use the sync button above to sync products from Fluid
             </p>
-            <button
-              onClick={syncProducts}
-              disabled={isSyncing}
-              className="inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
-              style={{
-                backgroundColor: brandGuidelines?.color 
-                  ? formatColor(brandGuidelines.color) 
-                  : '#3b82f6'
-              }}
-            >
-              {isSyncing ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Sync Products from Fluid
-                </>
-              )}
-            </button>
           </div>
         )
       ) : (
@@ -625,7 +695,7 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {orders.map((order) => (
+                  {getCurrentOrders().map((order) => (
                     <tr key={order.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
@@ -680,6 +750,67 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
                 </tbody>
               </table>
             </div>
+            
+            {/* Pagination */}
+            {getTotalPages() > 1 && (
+              <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                <div className="flex-1 flex justify-between sm:hidden">
+                  <button
+                    onClick={goToPreviousPage}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={goToNextPage}
+                    disabled={currentPage === getTotalPages()}
+                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Showing{' '}
+                      <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span>
+                      {' '}to{' '}
+                      <span className="font-medium">
+                        {Math.min(currentPage * itemsPerPage, orders.length)}
+                      </span>
+                      {' '}of{' '}
+                      <span className="font-medium">{orders.length}</span>
+                      {' '}results
+                    </p>
+                  </div>
+                  <div>
+                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                      <button
+                        onClick={goToPreviousPage}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span className="sr-only">Previous</span>
+                        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={goToNextPage}
+                        disabled={currentPage === getTotalPages()}
+                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span className="sr-only">Next</span>
+                        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
@@ -689,33 +820,9 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
               </svg>
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
-            <p className="text-gray-600 mb-4">
-              Sync orders from Fluid to see them here
+            <p className="text-gray-600">
+              Use the sync button above to sync orders from Fluid
             </p>
-            <button
-              onClick={syncOrders}
-              disabled={isSyncingOrders}
-              className="inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
-              style={{
-                backgroundColor: brandGuidelines?.color 
-                  ? formatColor(brandGuidelines.color) 
-                  : '#3b82f6'
-              }}
-            >
-              {isSyncingOrders ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Sync Orders from Fluid
-                </>
-              )}
-            </button>
           </div>
         )
       )}
