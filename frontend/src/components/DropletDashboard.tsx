@@ -27,6 +27,7 @@ export function DropletDashboard() {
   const [brandGuidelines, setBrandGuidelines] = useState<BrandGuidelines | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showToken, setShowToken] = useState(false)
 
   // Helper function to format colors
   const formatColor = (color: string | null | undefined) => {
@@ -208,233 +209,286 @@ export function DropletDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Clean Header with Company Branding */}
-      <div className="px-6 py-16">
-        <div 
-          className="relative max-w-4xl mx-auto rounded-3xl"
-          style={{
-            background: dashboardData?.brandGuidelines?.color 
-              ? `linear-gradient(135deg, ${formatColor(dashboardData.brandGuidelines.color)}, ${formatColor(dashboardData.brandGuidelines.secondary_color || dashboardData.brandGuidelines.color)}dd)`
-              : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-          }}
-        >
-          <div className="p-8">
-            <div className="flex items-center gap-8">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-2xl mx-auto">
+        {/* Single Card with Everything */}
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+          {/* Header with Company Branding */}
+          <div 
+            className="p-6 sm:p-8"
+            style={{
+              background: dashboardData?.brandGuidelines?.color 
+                ? `linear-gradient(135deg, ${formatColor(dashboardData.brandGuidelines.color)}, ${formatColor(dashboardData.brandGuidelines.secondary_color || dashboardData.brandGuidelines.color)}dd)`
+                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+            }}
+          >
+            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
               {/* Company Logo */}
               {(dashboardData?.brandGuidelines?.logo_url || dashboardData?.logoUrl) && (
-                <div className="w-24 h-24 rounded-2xl p-4 shadow-2xl bg-white/95 flex items-center justify-center">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl p-3 sm:p-4 shadow-2xl bg-white/95 flex items-center justify-center flex-shrink-0">
                   <img 
                     src={dashboardData.brandGuidelines?.logo_url || dashboardData.logoUrl} 
                     alt={`${dashboardData.brandGuidelines?.name || dashboardData.companyName} logo`}
-                  className="w-full h-full object-contain"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none'
-                  }}
-                />
-              </div>
-            )}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                </div>
+              )}
               
               {/* Company Info */}
-              <div className="flex-1">
-                <h1 className="text-5xl font-bold text-white mb-3">
+              <div className="text-center sm:text-left flex-1">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">
                   {dashboardData?.brandGuidelines?.name || dashboardData?.companyName}
                 </h1>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Dashboard Content */}
-      <div className="px-6 py-12">
-        <div className="max-w-4xl mx-auto">
-          {/* Success Card */}
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden mb-8">
-            <div className="p-8">
-              <div className="flex items-center justify-center mb-6">
-                <div 
-                  className="w-20 h-20 rounded-full flex items-center justify-center"
-                  style={{
-                    backgroundColor: dashboardData?.brandGuidelines?.color 
-                      ? `${formatColor(dashboardData.brandGuidelines.color)}20` 
-                      : '#10b98120'
-                  }}
-                >
-                  <svg 
-                    className="w-10 h-10" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                    style={{
-                      color: dashboardData?.brandGuidelines?.color 
-                        ? formatColor(dashboardData.brandGuidelines.color)
-                        : '#10b981'
-                    }}
-                  >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-              </div>
-              
-              <div className="text-center">
-                <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Installation Successful!
-            </h2>
-                <p className="text-xl text-gray-600 mb-8">
-              Your Fluid droplet is now active and ready to use.
-            </p>
-              </div>
-
-              {/* Company Details Accordion */}
-              <div className="max-w-3xl mx-auto">
-                <div className="space-y-6">
-                  {/* Basic Info */}
-                  <div className="bg-gray-50 rounded-2xl p-8">
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-gray-500 mb-2">Installation ID</p>
-                      <p className="text-lg font-mono text-gray-900 break-all">{dashboardData?.installationId}</p>
-                    </div>
-                  </div>
-
-                  {/* API Token - Collapsible */}
-                  {dashboardData?.authenticationToken && (
-                    <div className="bg-gray-50 rounded-2xl overflow-hidden">
-                      <details className="group">
-                        <summary className="flex items-center justify-between p-8 cursor-pointer hover:bg-gray-100 transition-colors">
-                          <div className="flex items-center gap-3">
-                            <div 
-                              className="w-8 h-8 rounded-lg flex items-center justify-center"
-                              style={{
-                                backgroundColor: dashboardData?.brandGuidelines?.color 
-                                  ? `${formatColor(dashboardData.brandGuidelines.color)}20`
-                                  : '#3b82f620'
-                              }}
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{
-                                color: dashboardData?.brandGuidelines?.color 
-                                  ? formatColor(dashboardData.brandGuidelines.color)
-                                  : '#3b82f6'
-                              }}>
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                              </svg>
-                            </div>
-                            <div>
-                              <h3 className="font-semibold text-gray-900">Company API Token</h3>
-                              <p className="text-sm text-gray-500">Authentication token for company API access</p>
-                            </div>
-                          </div>
-                          <svg className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </summary>
-                        
-                        <div className="px-8 pb-8">
-                          <div className="bg-white rounded-xl p-6 border border-gray-200">
-                            <p className="text-sm font-medium text-gray-700 mb-2">Authentication Token:</p>
-                            <div className="bg-gray-900 rounded-lg p-4">
-                              <code className="text-green-400 font-mono text-sm break-all block">
-                                {dashboardData.authenticationToken}
-                              </code>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-3">
-                              Use this token to authenticate API calls on behalf of the company (create orders, sync data, etc.)
-                            </p>
-                          </div>
-                        </div>
-                      </details>
-                    </div>
-                  )}
-
-                  {/* Brand Guidelines - Collapsible */}
-                  {dashboardData?.brandGuidelines && (
-                    <div className="bg-gray-50 rounded-2xl overflow-hidden">
-                      <details className="group">
-                        <summary className="flex items-center justify-between p-8 cursor-pointer hover:bg-gray-100 transition-colors">
-                          <div className="flex items-center gap-3">
-                            <div 
-                              className="w-8 h-8 rounded-lg flex items-center justify-center"
-                              style={{
-                                backgroundColor: dashboardData?.brandGuidelines?.color 
-                                  ? `${formatColor(dashboardData.brandGuidelines.color)}20`
-                                  : '#8b5cf620'
-                              }}
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{
-                                color: dashboardData?.brandGuidelines?.color 
-                                  ? formatColor(dashboardData.brandGuidelines.color)
-                                  : '#8b5cf6'
-                              }}>
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
-                              </svg>
-                            </div>
-                            <div>
-                              <h3 className="font-semibold text-gray-900">Brand Guidelines</h3>
-                              <p className="text-sm text-gray-500">Company colors, logo, and branding</p>
-                            </div>
-                          </div>
-                          <svg className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </summary>
-                        
-                        <div className="px-8 pb-8">
-                          <div className="bg-white rounded-xl p-8 border border-gray-200">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              {/* Colors */}
-                              <div>
-                                <h4 className="font-medium text-gray-900 mb-3">Brand Colors</h4>
-                                <div className="space-y-3">
-                                  <div className="flex items-center gap-3">
-                                    <div 
-                                      className="w-8 h-8 rounded-lg border border-gray-200"
-                                      style={{ backgroundColor: `#${dashboardData.brandGuidelines.color}` }}
-                                    ></div>
-                                    <div>
-                                      <p className="font-medium text-gray-900">Primary</p>
-                                      <p className="text-sm text-gray-500 font-mono">#{dashboardData.brandGuidelines.color}</p>
-                                    </div>
-                                  </div>
-                                  {dashboardData.brandGuidelines.secondary_color && (
-                                    <div className="flex items-center gap-3">
-                                      <div 
-                                        className="w-8 h-8 rounded-lg border border-gray-200"
-                                        style={{ backgroundColor: `#${dashboardData.brandGuidelines.secondary_color}` }}
-                                      ></div>
-                                      <div>
-                                        <p className="font-medium text-gray-900">Secondary</p>
-                                        <p className="text-sm text-gray-500 font-mono">#{dashboardData.brandGuidelines.secondary_color}</p>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              {/* Logo */}
-                              {dashboardData.brandGuidelines.logo_url && (
-                                <div>
-                                  <h4 className="font-medium text-gray-900 mb-3">Company Logo</h4>
-                                  <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-center">
-                                    <img 
-                                      src={dashboardData.brandGuidelines.logo_url} 
-                                      alt="Company logo"
-                                      className="max-h-16 object-contain"
-                                      onError={(e) => {
-                                        e.currentTarget.style.display = 'none'
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </details>
-                    </div>
-                  )}
+                <div className="flex items-center justify-center sm:justify-start gap-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-white/90 text-sm font-medium">Active</span>
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="p-6 sm:p-8">
+            {/* Success Message */}
+            <div className="text-center mb-6">
+              <div 
+                className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                style={{
+                  backgroundColor: dashboardData?.brandGuidelines?.color 
+                    ? `${formatColor(dashboardData.brandGuidelines.color)}20` 
+                    : '#10b98120'
+                }}
+              >
+                <svg 
+                  className="w-8 h-8" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                  style={{
+                    color: dashboardData?.brandGuidelines?.color 
+                      ? formatColor(dashboardData.brandGuidelines.color)
+                      : '#10b981'
+                  }}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+                Installation Successful!
+              </h2>
+              <p className="text-gray-600 text-sm sm:text-base">
+                Your Fluid droplet is now active and ready to use.
+              </p>
+            </div>
+
+            {/* Installation Details - Collapsible */}
+            <div className="bg-gray-50 rounded-2xl overflow-hidden mb-6">
+              <details className="group">
+                <summary className="flex items-center justify-between p-4 sm:p-6 cursor-pointer hover:bg-gray-100 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      style={{
+                        backgroundColor: dashboardData?.brandGuidelines?.color 
+                          ? `${formatColor(dashboardData.brandGuidelines.color)}20`
+                          : '#6b728020'
+                      }}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{
+                        color: dashboardData?.brandGuidelines?.color 
+                          ? formatColor(dashboardData.brandGuidelines.color)
+                          : '#6b7280'
+                      }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Installation Details</h3>
+                      <p className="text-xs sm:text-sm text-gray-500">ID and status information</p>
+                    </div>
+                  </div>
+                  <svg className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </summary>
+                
+                <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                  <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 space-y-4">
+                    <div>
+                      <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Installation ID</p>
+                      <p className="text-sm sm:text-base font-mono text-gray-900 break-all bg-gray-50 p-2 rounded">
+                        {dashboardData?.installationId}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Status</p>
+                      <span 
+                        className="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium"
+                        style={{
+                          backgroundColor: dashboardData?.brandGuidelines?.color 
+                            ? `${formatColor(dashboardData.brandGuidelines.color)}20`
+                            : '#dcfce720',
+                          color: dashboardData?.brandGuidelines?.color 
+                            ? formatColor(dashboardData.brandGuidelines.color)
+                            : '#16a34a'
+                        }}
+                      >
+                        <div className="w-2 h-2 rounded-full mr-2" style={{
+                          backgroundColor: dashboardData?.brandGuidelines?.color 
+                            ? formatColor(dashboardData.brandGuidelines.color)
+                            : '#16a34a'
+                        }}></div>
+                        Active
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </details>
+            </div>
+
+            {/* API Token */}
+            {dashboardData?.authenticationToken && (
+              <div className="bg-gray-50 rounded-2xl overflow-hidden mb-6">
+                <div className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style={{
+                          backgroundColor: dashboardData?.brandGuidelines?.color 
+                            ? `${formatColor(dashboardData.brandGuidelines.color)}20`
+                            : '#3b82f620'
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{
+                          color: dashboardData?.brandGuidelines?.color 
+                            ? formatColor(dashboardData.brandGuidelines.color)
+                            : '#3b82f6'
+                        }}>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1721 9z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Company API Token</h3>
+                        <p className="text-xs sm:text-sm text-gray-500">Authentication token for company API access</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowToken(!showToken)}
+                      className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                      title={showToken ? "Hide token" : "Show token"}
+                    >
+                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {showToken ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                        ) : (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        )}
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <div className="bg-gray-900 rounded-xl p-4">
+                    <code className="text-green-400 font-mono text-xs sm:text-sm break-all block">
+                      {showToken ? dashboardData.authenticationToken : '••••••••••••••••••••••••••••••••••••••••'}
+                    </code>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-3">
+                    Use this token to authenticate API calls on behalf of the company (create orders, sync data, etc.)
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Brand Guidelines - Collapsible */}
+            {dashboardData?.brandGuidelines && (
+              <div className="bg-gray-50 rounded-2xl overflow-hidden">
+                <details className="group">
+                  <summary className="flex items-center justify-between p-4 sm:p-6 cursor-pointer hover:bg-gray-100 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style={{
+                          backgroundColor: dashboardData?.brandGuidelines?.color 
+                            ? `${formatColor(dashboardData.brandGuidelines.color)}20`
+                            : '#8b5cf620'
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{
+                          color: dashboardData?.brandGuidelines?.color 
+                            ? formatColor(dashboardData.brandGuidelines.color)
+                            : '#8b5cf6'
+                        }}>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Brand Guidelines</h3>
+                        <p className="text-xs sm:text-sm text-gray-500">Company colors, logo, and branding</p>
+                      </div>
+                    </div>
+                    <svg className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  
+                  <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                    <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200">
+                      <div className="space-y-6">
+                        {/* Colors */}
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-3 text-sm sm:text-base">Brand Colors</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="flex items-center gap-3">
+                              <div 
+                                className="w-8 h-8 rounded-lg border border-gray-200 flex-shrink-0"
+                                style={{ backgroundColor: `#${dashboardData.brandGuidelines.color}` }}
+                              ></div>
+                              <div>
+                                <p className="font-medium text-gray-900 text-sm">Primary</p>
+                                <p className="text-xs text-gray-500 font-mono">#{dashboardData.brandGuidelines.color}</p>
+                              </div>
+                            </div>
+                            {dashboardData.brandGuidelines.secondary_color && (
+                              <div className="flex items-center gap-3">
+                                <div 
+                                  className="w-8 h-8 rounded-lg border border-gray-200 flex-shrink-0"
+                                  style={{ backgroundColor: `#${dashboardData.brandGuidelines.secondary_color}` }}
+                                ></div>
+                                <div>
+                                  <p className="font-medium text-gray-900 text-sm">Secondary</p>
+                                  <p className="text-xs text-gray-500 font-mono">#{dashboardData.brandGuidelines.secondary_color}</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Logo */}
+                        {dashboardData.brandGuidelines.logo_url && (
+                          <div>
+                            <h4 className="font-medium text-gray-900 mb-3 text-sm sm:text-base">Company Logo</h4>
+                            <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-center">
+                              <img 
+                                src={dashboardData.brandGuidelines.logo_url} 
+                                alt="Company logo"
+                                className="max-h-12 sm:max-h-16 object-contain"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none'
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            )}
           </div>
         </div>
       </div>
