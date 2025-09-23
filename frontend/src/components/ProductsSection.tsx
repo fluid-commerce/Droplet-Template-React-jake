@@ -279,9 +279,15 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
       if (data.success) {
         setProducts(data.data.products)
         setCompanyName(data.data.installation.companyName)
-        // Debug: Log first product to check imageUrl
+        // Debug: Log first few products to check imageUrl
         if (data.data.products.length > 0) {
-          console.log('First product data:', data.data.products[0])
+          console.log('🔍 Frontend: First product data:', data.data.products[0])
+          console.log('🔍 Frontend: First product imageUrl:', data.data.products[0].imageUrl)
+          
+          // Check first 3 products for image URLs
+          data.data.products.slice(0, 3).forEach((product: any, index: number) => {
+            console.log(`🔍 Frontend: Product ${index + 1} (ID: ${product.fluidProductId}) imageUrl:`, product.imageUrl)
+          })
         }
       } else {
         setError('Failed to fetch products')
@@ -670,7 +676,11 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
                                 className="h-10 w-10 rounded-lg object-cover"
                                 src={product.imageUrl}
                                 alt={product.title}
+                                onLoad={() => {
+                                  console.log(`✅ Frontend: Image loaded successfully for product ${product.fluidProductId}:`, product.imageUrl)
+                                }}
                                 onError={(e) => {
+                                  console.log(`❌ Frontend: Image failed to load for product ${product.fluidProductId}:`, product.imageUrl)
                                   // Show placeholder if image fails to load
                                   e.currentTarget.style.display = 'none'
                                   const nextElement = e.currentTarget.nextElementSibling as HTMLElement
@@ -679,7 +689,10 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
                                   }
                                 }}
                               />
-                            ) : null}
+                            ) : (() => {
+                              console.log(`⚠️ Frontend: No imageUrl for product ${product.fluidProductId}`)
+                              return null
+                            })()}
                             <div 
                               className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center"
                               style={{ display: product.imageUrl ? 'none' : 'flex' }}
