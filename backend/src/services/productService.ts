@@ -26,6 +26,26 @@ export interface FluidProductsResponse {
   }
 }
 
+export interface FluidOrder {
+  id: number
+  order_number: string
+  amount: string
+  status: string
+  created_at: string
+  customer?: any
+  items_count?: number
+}
+
+export interface FluidOrdersResponse {
+  orders: FluidOrder[]
+  meta: {
+    request_id: string
+    timestamp: string
+    current_page?: number
+    total_count?: number
+  }
+}
+
 export class ProductService {
   /**
    * Fetch products from Fluid API
@@ -183,10 +203,80 @@ export class ProductService {
    */
   static async getProductByFluidId(installationId: string, fluidProductId: string) {
     const result = await prisma.$queryRaw`
-      SELECT * FROM products 
+      SELECT * FROM products
       WHERE "installationId" = ${installationId} AND "fluidProductId" = ${fluidProductId}
       LIMIT 1
     `
     return Array.isArray(result) && result.length > 0 ? result[0] : null
+  }
+
+  /**
+   * Fetch orders from Fluid API (for testing token functionality)
+   */
+  static async fetchOrdersFromFluid(
+    companyShop: string,
+    authToken: string,
+    page: number = 1,
+    perPage: number = 10
+  ): Promise<FluidOrdersResponse> {
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      per_page: perPage.toString()
+    })
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
+    try {
+      // Try multiple API endpoints for orders
+      const possibleEndpoints = [
+        `https://${companyShop}.fluid.app/api/v202506/orders?${queryParams}`, // Latest version
+        `https://${companyShop}.fluid.app/api/v2/orders?${queryParams}`, // v2 version
+        `https://app.nexui.com/api/v202506/orders?company=${companyShop}&${queryParams}`, // nexui with latest
+        `https://app.nexui.com/api/v2/orders?company=${companyShop}&${queryParams}`, // nexui with v2
+        `https://api.fluid.app/api/v2/orders?company=${companyShop}&${queryParams}` // global API
+      ];
+
+      let response = null;
+
+      for (const endpoint of possibleEndpoints) {
+        console.log(`🔍 Trying orders API endpoint: ${endpoint}`);
+
+        try {
+          response = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${authToken}`,
+              'Content-Type': 'application/json'
+            },
+            signal: controller.signal
+          });
+
+          if (response.ok) {
+            console.log(`✅ Success with orders endpoint: ${endpoint}`);
+            break;
+          } else {
+            console.log(`❌ Failed with ${endpoint}: ${response.status} ${response.statusText}`);
+          }
+        } catch (endpointError) {
+          console.log(`❌ Error with ${endpoint}: ${endpointError}`);
+        }
+      }
+
+      if (!response || !response.ok) {
+        throw new Error(`All orders API endpoints failed. Last status: ${response?.status || 'No response'}`);
+      }
+
+      clearTimeout(timeoutId)
+
+      const data = await response.json()
+      return data as FluidOrdersResponse
+    } catch (error) {
+      clearTimeout(timeoutId)
+      if (error instanceof Error) {
+        throw new Error(`Failed to fetch orders from Fluid: ${error.message}`)
+      }
+      throw new Error('Failed to fetch orders from Fluid: Unknown error')
+    }
   }
 }
