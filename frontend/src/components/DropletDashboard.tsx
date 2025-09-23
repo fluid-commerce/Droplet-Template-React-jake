@@ -139,33 +139,19 @@ export function DropletDashboard() {
   }, [installationId, fluidApiKey])
 
   if (isLoading) {
-    // Use brand colors if available, otherwise use default blue
-    const defaultColor = '#2563eb'
+    // Use brand colors if available, otherwise use black
+    const defaultColor = '#000000'
     const primaryColor = brandGuidelines?.color ? formatColor(brandGuidelines.color) : defaultColor
-    const lightColor = brandGuidelines?.color ? `${formatColor(brandGuidelines.color)}20` : `${defaultColor}20`
-    
+
     return (
-      <div 
-        className="min-h-screen flex items-center justify-center p-4"
-        style={{
-          background: brandGuidelines?.color 
-            ? `linear-gradient(135deg, ${lightColor}, ${formatColor(brandGuidelines.color)}10)`
-            : 'linear-gradient(135deg, #f8fafc, #e0e7ff, #c7d2fe)'
-        }}
-      >
-        <div className="text-center">
-          <div 
-            className="w-16 h-16 border-4 rounded-full animate-spin mx-auto mb-6"
-            style={{
-              borderColor: `${primaryColor}20`,
-              borderTopColor: primaryColor
-            }}
-          ></div>
-          <h3 className="text-2xl font-semibold text-gray-800 mb-2">
-            Loading {brandGuidelines?.name || 'Dashboard'}...
-          </h3>
-          <p className="text-gray-600 mt-2">Please wait while we set up your droplet</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+        <div
+          className="w-16 h-16 border-4 rounded-full animate-spin"
+          style={{
+            borderColor: `${primaryColor}20`,
+            borderTopColor: primaryColor
+          }}
+        ></div>
       </div>
     )
   }
