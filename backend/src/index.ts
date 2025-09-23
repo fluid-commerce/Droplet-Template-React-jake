@@ -61,37 +61,12 @@ fastify.get('/health', async (request, reply) => {
   return { status: 'ok', timestamp: new Date().toISOString() };
 });
 
-// Debug endpoint to list installations (for troubleshooting)
-fastify.get('/api/debug/installations', async (request, reply) => {
-  try {
-    const installations = await prisma.installation.findMany({
-      include: { company: true },
-      orderBy: { updatedAt: 'desc' },
-      take: 10
-    });
-    
-    return {
-      count: installations.length,
-      installations: installations.map(inst => ({
-        id: inst.fluidId,
-        company: inst.company.name,
-        active: inst.isActive,
-        created: inst.createdAt,
-        updated: inst.updatedAt
-      }))
-    };
-  } catch (error) {
-    fastify.log.error(error);
-    return reply.status(500).send({ error: 'Internal server error' });
-  }
-});
 
 // Get installation details including authentication token (for Fluid integration)
 fastify.get('/api/droplet/installation/:installationId', async (request, reply) => {
   try {
     const { installationId } = request.params as { installationId: string };
     
-    fastify.log.info(`Installation details request for: ${installationId}`);
     
     const installation = await prisma.installation.findUnique({
       where: { fluidId: installationId },
@@ -117,7 +92,6 @@ fastify.get('/api/droplet/installation/:installationId', async (request, reply) 
       }
     };
 
-    fastify.log.info(`Returning installation details for: ${installation.company.name}`);
     return result;
   } catch (error) {
     fastify.log.error(error);
@@ -131,7 +105,6 @@ fastify.get('/api/droplet/brand-guidelines/:installationId', async (request, rep
     const { installationId } = request.params as { installationId: string };
     const { fluid_api_key } = request.query as { fluid_api_key: string };
 
-    fastify.log.info(`Brand guidelines request for installation: ${installationId}, API key: ${fluid_api_key?.substring(0, 10)}...`);
 
     if (!fluid_api_key) {
       fastify.log.warn('Brand guidelines request missing fluid_api_key');
@@ -164,7 +137,6 @@ fastify.get('/api/droplet/brand-guidelines/:installationId', async (request, rep
       // Fetch brand guidelines from Fluid API
       // Note: We don't store the fluid_shop in our database, so we'll use the main Fluid API
       const fluidApiUrl = `https://fluid.app/api/settings/brand_guidelines`;
-      fastify.log.info(`Fetching brand guidelines from: ${fluidApiUrl}`);
 
       const response = await fetch(fluidApiUrl, {
         method: 'GET',
@@ -180,7 +152,6 @@ fastify.get('/api/droplet/brand-guidelines/:installationId', async (request, rep
       }
 
       const brandData = await response.json();
-      fastify.log.info(`Brand guidelines fetched from Fluid API:`, brandData);
 
       const result = {
         data: {
@@ -193,7 +164,6 @@ fastify.get('/api/droplet/brand-guidelines/:installationId', async (request, rep
         }
       };
 
-      fastify.log.info(`Returning brand guidelines for: ${result.data.name}`);
       return result;
     } catch (fetchError) {
       const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown error';
@@ -211,7 +181,6 @@ fastify.get('/api/droplet/brand-guidelines/:installationId', async (request, rep
         data: brandGuidelines
       };
 
-      fastify.log.info(`Returning fallback brand guidelines for: ${installation.company.name}`);
       return result;
     }
   } catch (error) {
@@ -226,7 +195,6 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
     const { installationId } = request.params as { installationId: string };
     const { fluid_api_key } = request.query as { fluid_api_key: string };
 
-    fastify.log.info(`Auth token request for installation: ${installationId}, API key: ${fluid_api_key?.substring(0, 10)}...`);
 
     if (!fluid_api_key) {
       fastify.log.warn('Auth token request missing fluid_api_key');
@@ -279,7 +247,6 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
       }
     };
 
-    fastify.log.info(`Returning auth token for: ${installData.companyName}`);
     return result;
   } catch (error) {
     fastify.log.error(error);
@@ -293,8 +260,6 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
       const { installationId } = request.params as { installationId: string };
       const { fluid_api_key } = request.query as { fluid_api_key: string };
 
-      fastify.log.info(`Dashboard request for installation: ${installationId}, API key: ${fluid_api_key?.substring(0, 10)}...`);
-
       // If API key is provided, validate it
       if (fluid_api_key) {
         // Validate the authentication token format (should start with 'dit_' or 'cdrtkn_')
@@ -302,8 +267,6 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
           fastify.log.warn(`Invalid API key format: ${fluid_api_key.substring(0, 10)}...`);
           return reply.status(400).send({ error: 'Invalid authentication token format' });
         }
-      } else {
-        fastify.log.info('Dashboard request without API key - returning basic installation data');
       }
 
     // Find the installation using the correct database schema
@@ -320,10 +283,6 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
       WHERE i."fluidId" = ${installationId}
     ` as any[];
 
-    fastify.log.info(`Installation lookup result: ${installation && installation.length > 0 ? 'found' : 'not found'}`);
-    if (installation && installation.length > 0) {
-      fastify.log.info(`Installation active: ${installation[0].isActive}, company: ${installation[0].companyName}`);
-    }
 
     if (!installation || installation.length === 0) {
       fastify.log.warn(`Installation not found: ${installationId}`);
@@ -346,7 +305,6 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
       }
     };
 
-    fastify.log.info(`Returning dashboard data for: ${installData.companyName}`);
     return result;
   } catch (error) {
     fastify.log.error(error);
@@ -358,14 +316,11 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
 fastify.post('/api/webhook/fluid', async (request, reply) => {
   try {
     const body = request.body as any;
-    fastify.log.info(`Received webhook body: ${JSON.stringify(body, null, 2)}`);
-    fastify.log.info(`Webhook headers: ${JSON.stringify(request.headers, null, 2)}`);
 
     // Handle installation events
     if (body.event === 'installed') {
       const { company } = body;
       
-      fastify.log.info(`Processing installation event for: ${company.droplet_installation_uuid}`);
       
       // Create or update company
       const companyRecord = await prisma.company.upsert({
@@ -396,14 +351,12 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
 
       const installData = installation[0];
 
-      fastify.log.info(`Installation created/updated for company: ${company.name}, active: ${installData.isActive}`);
     }
 
     // Handle uninstallation events
     if (body.event === 'uninstalled') {
       const { company } = body;
       
-      fastify.log.info(`Processing uninstallation event for: ${company.droplet_installation_uuid}`);
       
       // Deactivate the installation using the correct database schema
       const result = await prisma.$queryRaw`
@@ -413,7 +366,6 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
         RETURNING "fluidId"
       ` as any[];
 
-      fastify.log.info(`Installation deactivated: ${company.droplet_installation_uuid}, updated: ${result.length} records`);
     }
 
     return { status: 'ok' };

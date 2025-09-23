@@ -36,14 +36,11 @@ export function DropletDashboard() {
   // Function to fetch brand guidelines from Fluid API
   const fetchBrandGuidelines = async (installationId: string, fluidApiKey: string) => {
     try {
-      console.log('🎨 Fetching brand guidelines for installation:', installationId)
       const response = await apiClient.get(`/api/droplet/brand-guidelines/${installationId}?fluid_api_key=${fluidApiKey}`)
       const brandData = response.data.data
-      console.log('✅ Brand guidelines loaded:', brandData)
       setBrandGuidelines(brandData)
       return brandData
     } catch (err: any) {
-      console.log('⚠️ Failed to fetch brand guidelines:', err.response?.status, err.response?.data)
       // Don't fail the whole dashboard if brand guidelines fail
       return null
     }
@@ -51,25 +48,16 @@ export function DropletDashboard() {
 
 
   useEffect(() => {
-    const loadDashboardData = async () => {
-      console.log('🔍 DropletDashboard: Starting loadDashboardData')
-      console.log('🔍 Installation ID:', installationId)
-      console.log('🔍 Fluid API Key:', fluidApiKey)
-      console.log('🔍 API Base URL:', import.meta.env.VITE_API_BASE_URL)
-      console.log('🔍 Current URL:', window.location.href)
-      console.log('🔍 Search params:', window.location.search)
-      console.log('🔍 All URL params:', Object.fromEntries(searchParams.entries()))
+  const loadDashboardData = async () => {
       
       // Check if we're missing both parameters - this indicates we're not in a proper Fluid embed
       if (!installationId && !fluidApiKey) {
-        console.log('⚠️ No Fluid parameters found - this appears to be a direct access')
         setError('This droplet must be accessed through the Fluid platform. Please install it from the Fluid marketplace.')
         setIsLoading(false)
         return
       }
 
       if (!installationId) {
-        console.log('❌ Missing installation ID')
         setError('Missing installation ID. Please try reinstalling the droplet from the Fluid marketplace.')
         setIsLoading(false)
         return
@@ -77,24 +65,18 @@ export function DropletDashboard() {
 
       // If we don't have fluid_api_key, try the installation endpoint first
       if (!fluidApiKey) {
-        console.log('⚠️ Missing Fluid API key, trying dashboard endpoint without API key')
         try {
           const apiUrl = `/api/droplet/dashboard/${installationId}`
-          console.log('🚀 Making API request to dashboard endpoint:', apiUrl)
-          
           const response = await apiClient.get(apiUrl)
-          console.log('✅ Dashboard API Response received:', response.data)
           setDashboardData(response.data.data)
           setIsLoading(false)
           return
         } catch (err: any) {
-          console.log('❌ Dashboard endpoint failed:', err.response?.status, err.response?.data)
           // Continue to show error about missing API key
         }
       }
 
       if (!fluidApiKey) {
-        console.log('❌ Missing Fluid API key')
         setError('Missing Fluid API key. Please try reinstalling the droplet from the Fluid marketplace.')
         setIsLoading(false)
         return
@@ -107,7 +89,6 @@ export function DropletDashboard() {
           fetchBrandGuidelines(installationId, fluidApiKey)
         ])
 
-        console.log('✅ Dashboard API Response received:', dashboardResponse.data)
         const dashboardData = dashboardResponse.data.data
         
         // If we have brand guidelines, merge them into dashboard data
@@ -117,15 +98,6 @@ export function DropletDashboard() {
         
         setDashboardData(dashboardData)
       } catch (err: any) {
-        console.error('❌ Failed to load dashboard data:', err)
-        console.error('❌ Error details:', {
-          message: err.message,
-          status: err.response?.status,
-          statusText: err.response?.statusText,
-          data: err.response?.data,
-          config: err.config
-        })
-        
         // If installation not found (404) or forbidden (403), it was likely uninstalled
         if (err.response?.status === 404 || err.response?.status === 403) {
           // Clear localStorage and redirect to fresh installation
