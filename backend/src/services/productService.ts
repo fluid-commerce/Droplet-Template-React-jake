@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '../db'
 
 export interface FluidProduct {
   id: number
@@ -83,37 +81,29 @@ export class ProductService {
         // Process each product
         for (const fluidProduct of fluidResponse.products) {
           try {
-            await prisma.product.upsert({
-              where: {
-                installationId_fluidProductId: {
-                  installationId,
-                  fluidProductId: fluidProduct.id.toString()
-                }
-              },
-              update: {
-                title: fluidProduct.title,
-                sku: fluidProduct.sku || null,
-                description: fluidProduct.description || null,
-                imageUrl: fluidProduct.image_url || null,
-                status: fluidProduct.status || null,
-                price: fluidProduct.price || null,
-                inStock: fluidProduct.in_stock ?? true,
-                public: fluidProduct.public ?? true,
-                updatedAt: new Date()
-              },
-              create: {
-                installationId,
-                fluidProductId: fluidProduct.id.toString(),
-                title: fluidProduct.title,
-                sku: fluidProduct.sku || null,
-                description: fluidProduct.description || null,
-                imageUrl: fluidProduct.image_url || null,
-                status: fluidProduct.status || null,
-                price: fluidProduct.price || null,
-                inStock: fluidProduct.in_stock ?? true,
-                public: fluidProduct.public ?? true
-              }
-            })
+            await prisma.$executeRaw`
+              INSERT INTO products (
+                id, "installationId", "fluidProductId", title, sku, description, 
+                "imageUrl", status, price, "inStock", public, "createdAt", "updatedAt"
+              ) VALUES (
+                gen_random_uuid(), ${installationId}, ${fluidProduct.id.toString()}, 
+                ${fluidProduct.title}, ${fluidProduct.sku || null}, ${fluidProduct.description || null},
+                ${fluidProduct.image_url || null}, ${fluidProduct.status || null}, 
+                ${fluidProduct.price || null}, ${fluidProduct.in_stock ?? true}, 
+                ${fluidProduct.public ?? true}, NOW(), NOW()
+              )
+              ON CONFLICT ("installationId", "fluidProductId") 
+              DO UPDATE SET
+                title = EXCLUDED.title,
+                sku = EXCLUDED.sku,
+                description = EXCLUDED.description,
+                "imageUrl" = EXCLUDED."imageUrl",
+                status = EXCLUDED.status,
+                price = EXCLUDED.price,
+                "inStock" = EXCLUDED."inStock",
+                public = EXCLUDED.public,
+                "updatedAt" = NOW()
+            `
             syncedCount++
           } catch (error) {
             console.error(`Error syncing product ${fluidProduct.id}:`, error)
@@ -141,27 +131,22 @@ export class ProductService {
    * Get products from our database for an installation
    */
   static async getProductsForInstallation(installationId: string) {
-    return await prisma.product.findMany({
-      where: {
-        installationId
-      },
-      orderBy: {
-        updatedAt: 'desc'
-      }
-    })
+    return await prisma.$queryRaw`
+      SELECT * FROM products 
+      WHERE "installationId" = ${installationId}
+      ORDER BY "updatedAt" DESC
+    `
   }
 
   /**
    * Get a single product by Fluid ID
    */
   static async getProductByFluidId(installationId: string, fluidProductId: string) {
-    return await prisma.product.findUnique({
-      where: {
-        installationId_fluidProductId: {
-          installationId,
-          fluidProductId
-        }
-      }
-    })
+    const result = await prisma.$queryRaw`
+      SELECT * FROM products 
+      WHERE "installationId" = ${installationId} AND "fluidProductId" = ${fluidProductId}
+      LIMIT 1
+    `
+    return Array.isArray(result) && result.length > 0 ? result[0] : null
   }
 }

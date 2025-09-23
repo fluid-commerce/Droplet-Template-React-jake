@@ -9,15 +9,16 @@ export async function productRoutes(fastify: FastifyInstance) {
       const { installationId } = request.params as { installationId: string }
       
       // Verify installation exists and is active
-      const installation = await prisma.installation.findFirst({
-        where: {
-          fluidId: installationId,
-          isActive: true
-        },
-        include: {
-          company: true
-        }
-      })
+      const installationResult = await prisma.$queryRaw`
+        SELECT i.*, c.name as "companyName", c."logoUrl" as "companyLogoUrl"
+        FROM installations i
+        JOIN companies c ON i."companyId" = c.id
+        WHERE i."fluidId" = ${installationId} AND i."isActive" = true
+        LIMIT 1
+      `
+      const installation = Array.isArray(installationResult) && installationResult.length > 0 
+        ? installationResult[0] 
+        : null
 
       if (!installation) {
         return reply.status(404).send({
@@ -34,12 +35,12 @@ export async function productRoutes(fastify: FastifyInstance) {
           products,
           installation: {
             id: installation.fluidId,
-            companyName: installation.company.name
+            companyName: installation.companyName
           }
         }
       })
     } catch (error) {
-      fastify.log.error('Error fetching products:', error)
+      fastify.log.error(error)
       return reply.status(500).send({
         success: false,
         message: 'Failed to fetch products'
@@ -53,15 +54,16 @@ export async function productRoutes(fastify: FastifyInstance) {
       const { installationId } = request.params as { installationId: string }
       
       // Get installation details
-      const installation = await prisma.installation.findFirst({
-        where: {
-          fluidId: installationId,
-          isActive: true
-        },
-        include: {
-          company: true
-        }
-      })
+      const installationResult = await prisma.$queryRaw`
+        SELECT i.*, c.name as "companyName", c."logoUrl" as "companyLogoUrl"
+        FROM installations i
+        JOIN companies c ON i."companyId" = c.id
+        WHERE i."fluidId" = ${installationId} AND i."isActive" = true
+        LIMIT 1
+      `
+      const installation = Array.isArray(installationResult) && installationResult.length > 0 
+        ? installationResult[0] 
+        : null
 
       if (!installation) {
         return reply.status(404).send({
@@ -79,7 +81,7 @@ export async function productRoutes(fastify: FastifyInstance) {
 
       // Extract company shop from Fluid company ID (assuming format like "tacobell.fluid.app")
       // For now, we'll use a default or extract from company data
-      const companyShop = installation.company.name.toLowerCase().replace(/\s+/g, '') + '.fluid.app'
+      const companyShop = installation.companyName.toLowerCase().replace(/\s+/g, '') + '.fluid.app'
 
       // Sync products from Fluid
       const syncResult = await ProductService.syncProductsFromFluid(
@@ -96,12 +98,12 @@ export async function productRoutes(fastify: FastifyInstance) {
           errors: syncResult.errors,
           installation: {
             id: installation.fluidId,
-            companyName: installation.company.name
+            companyName: installation.companyName
           }
         }
       })
     } catch (error) {
-      fastify.log.error('Error syncing products:', error)
+      fastify.log.error(error)
       return reply.status(500).send({
         success: false,
         message: 'Failed to sync products from Fluid'
@@ -115,15 +117,16 @@ export async function productRoutes(fastify: FastifyInstance) {
       const { installationId } = request.params as { installationId: string }
       
       // Get installation details
-      const installation = await prisma.installation.findFirst({
-        where: {
-          fluidId: installationId,
-          isActive: true
-        },
-        include: {
-          company: true
-        }
-      })
+      const installationResult = await prisma.$queryRaw`
+        SELECT i.*, c.name as "companyName", c."logoUrl" as "companyLogoUrl"
+        FROM installations i
+        JOIN companies c ON i."companyId" = c.id
+        WHERE i."fluidId" = ${installationId} AND i."isActive" = true
+        LIMIT 1
+      `
+      const installation = Array.isArray(installationResult) && installationResult.length > 0 
+        ? installationResult[0] 
+        : null
 
       if (!installation) {
         return reply.status(404).send({
@@ -139,7 +142,7 @@ export async function productRoutes(fastify: FastifyInstance) {
         })
       }
 
-      const companyShop = installation.company.name.toLowerCase().replace(/\s+/g, '') + '.fluid.app'
+      const companyShop = installation.companyName.toLowerCase().replace(/\s+/g, '') + '.fluid.app'
 
       // Fetch products directly from Fluid API
       const fluidResponse = await ProductService.fetchProductsFromFluid(
@@ -156,12 +159,12 @@ export async function productRoutes(fastify: FastifyInstance) {
           meta: fluidResponse.meta,
           installation: {
             id: installation.fluidId,
-            companyName: installation.company.name
+            companyName: installation.companyName
           }
         }
       })
     } catch (error) {
-      fastify.log.error('Error fetching products from Fluid:', error)
+      fastify.log.error(error)
       return reply.status(500).send({
         success: false,
         message: 'Failed to fetch products from Fluid API'

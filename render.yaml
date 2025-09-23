@@ -30,7 +30,7 @@ services:
     name: droplet-backend
     env: node
     buildCommand: cd backend && npm install && npm run build && npm run db:push
-    startCommand: cd backend && chmod +x scripts/start.sh && ./scripts/start.sh
+    startCommand: cd backend && node dist/index.js
     # Backend service with organized structure
     # All backend files are in the backend/ directory
     envVars:
