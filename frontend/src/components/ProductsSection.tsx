@@ -99,6 +99,7 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
   const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products')
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
+  const [isTabLoading, setIsTabLoading] = useState(false)
   const itemsPerPage = 10
 
   // Helper function to format colors
@@ -223,6 +224,19 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
   const goToPage = (page: number) => {
     if (page >= 1 && page <= getTotalPages()) {
       setCurrentPage(page)
+    }
+  }
+
+  const handleTabChange = (tab: 'products' | 'orders') => {
+    if (tab !== activeTab) {
+      setIsTabLoading(true)
+      setActiveTab(tab)
+      setCurrentPage(1) // Reset to first page when switching tabs
+      
+      // Show loading for 3 seconds
+      setTimeout(() => {
+        setIsTabLoading(false)
+      }, 3000)
     }
   }
 
@@ -447,32 +461,41 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
         {/* Tabs - Full width on mobile, auto width on desktop */}
         <div className="w-full sm:w-auto">
           <div className="flex bg-gray-100 rounded-lg p-1 w-full sm:w-auto">
-            <button
-              onClick={() => setActiveTab('products')}
-              className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                activeTab === 'products'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Products
-            </button>
-            <button
-              onClick={() => setActiveTab('orders')}
-              className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                activeTab === 'orders'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Orders
-            </button>
+                <button
+                  onClick={() => handleTabChange('products')}
+                  disabled={isTabLoading}
+                  className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                    activeTab === 'products'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  } ${isTabLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  Products
+                </button>
+                <button
+                  onClick={() => handleTabChange('orders')}
+                  disabled={isTabLoading}
+                  className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                    activeTab === 'orders'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  } ${isTabLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  Orders
+                </button>
           </div>
         </div>
       </div>
 
+      {/* Tab Loading Spinner */}
+      {isTabLoading && (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+        </div>
+      )}
+
       {/* Search bar for orders */}
-      {activeTab === 'orders' && (
+      {!isTabLoading && activeTab === 'orders' && (
         <div className="mb-4">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -640,7 +663,7 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
       )}
 
       {/* Content based on active tab */}
-      {activeTab === 'products' ? (
+      {!isTabLoading && activeTab === 'products' ? (
         /* Products list */
         products.length > 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -861,7 +884,7 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
             </p>
           </div>
         )
-      ) : (
+      ) : !isTabLoading && activeTab === 'orders' ? (
         /* Orders list */
         orders.length > 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -1043,7 +1066,7 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
             </p>
           </div>
         )
-      )}
+      ) : null}
     </div>
   )
 }
