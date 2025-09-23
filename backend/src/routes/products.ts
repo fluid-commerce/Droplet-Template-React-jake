@@ -90,9 +90,13 @@ export async function productRoutes(fastify: FastifyInstance) {
 
       // Fetch product image from Fluid API on cache miss
       try {
+        // Ensure we pass the subdomain (e.g., "tacobell") not the full domain
+        const fluidShop = (installation as any).fluidShop
+        const companyShop = fluidShop?.replace?.('.fluid.app', '') || fluidShop
+
         const imageUrl = await ProductService.fetchProductImages(
-          installation.fluidShop,
-          installation.authenticationToken,
+          companyShop,
+          (installation as any).authenticationToken,
           parseInt(productId)
         )
 

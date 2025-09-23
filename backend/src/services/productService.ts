@@ -166,36 +166,43 @@ export class ProductService {
     productId: number
   ): Promise<string | null> {
     try {
-      const url = `https://${companyShop}.fluid.app/api/company/v1/products/${productId}/images`
+      const possibleEndpoints = [
+        `https://${companyShop}.fluid.app/api/company/v1/products/${productId}/images`,
+        `https://app.nexui.com/api/company/v1/products/${productId}/images?company=${companyShop}`,
+        `https://api.fluid.app/api/company/v1/products/${productId}/images?company=${companyShop}`
+      ]
       
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout for images
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        },
-        signal: controller.signal
-      })
+      let imageUrl: string | null = null
+      for (const endpoint of possibleEndpoints) {
+        try {
+          const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${authToken}`,
+              'Content-Type': 'application/json'
+            },
+            signal: controller.signal
+          })
+          if (!response.ok) continue
+
+          const data = await response.json()
+          // Normalize shapes: { images: [...] } or { status: 'success', data: { images: [...] } }
+          const images = data?.images || data?.data?.images || []
+          if (Array.isArray(images) && images.length > 0) {
+            const sortedImages = images.sort((a: any, b: any) => (a.position || 0) - (b.position || 0))
+            imageUrl = sortedImages[0]?.image_url || sortedImages[0]?.url || null
+            if (imageUrl) break
+          }
+        } catch (e) {
+          // try next endpoint
+        }
+      }
 
       clearTimeout(timeoutId)
-
-      if (!response.ok) {
-        // If images endpoint fails, return null (product might not have images)
-        return null
-      }
-
-      const data = await response.json()
-      
-      // Get the first image URL, sorted by position
-      if (data.images && data.images.length > 0) {
-        const sortedImages = data.images.sort((a: any, b: any) => (a.position || 0) - (b.position || 0))
-        return sortedImages[0].image_url || null
-      }
-      
-      return null
+      return imageUrl
     } catch (error: any) {
       // If there's any error fetching images, just return null
       return null
