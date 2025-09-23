@@ -36,11 +36,14 @@ export function DropletDashboard() {
   // Function to fetch brand guidelines from Fluid API
   const fetchBrandGuidelines = async (installationId: string, fluidApiKey: string) => {
     try {
+      console.log('🔍 Fetching brand guidelines for:', installationId)
       const response = await apiClient.get(`/api/droplet/brand-guidelines/${installationId}?fluid_api_key=${fluidApiKey}`)
       const brandData = response.data.data
+      console.log('✅ Brand guidelines received:', brandData)
       setBrandGuidelines(brandData)
       return brandData
     } catch (err: any) {
+      console.error('❌ Failed to fetch brand guidelines:', err.response?.data || err.message)
       // Don't fail the whole dashboard if brand guidelines fail
       return null
     }
@@ -203,7 +206,7 @@ export function DropletDashboard() {
         }}
       >
         <div className="px-6 py-16">
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-4xl mx-auto">
             <div className="flex items-center gap-8">
               {/* Company Logo */}
               {(dashboardData?.brandGuidelines?.logo_url || dashboardData?.logoUrl) && (
@@ -238,7 +241,7 @@ export function DropletDashboard() {
 
       {/* Main Dashboard Content */}
       <div className="px-6 py-12">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           {/* Success Card */}
           <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden mb-8">
             <div className="p-8">
@@ -277,7 +280,7 @@ export function DropletDashboard() {
               </div>
 
               {/* Company Details Accordion */}
-              <div className="max-w-4xl mx-auto">
+              <div className="max-w-3xl mx-auto">
                 <div className="space-y-6">
                   {/* Basic Info */}
                   <div className="bg-gray-50 rounded-2xl p-8">

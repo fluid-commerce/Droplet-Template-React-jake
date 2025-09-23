@@ -138,6 +138,9 @@ fastify.get('/api/droplet/brand-guidelines/:installationId', async (request, rep
       // Note: We don't store the fluid_shop in our database, so we'll use the main Fluid API
       const fluidApiUrl = `https://fluid.app/api/settings/brand_guidelines`;
 
+      fastify.log.info(`🔍 Fetching brand guidelines from: ${fluidApiUrl}`);
+      fastify.log.info(`🔑 Using API key: ${fluid_api_key.substring(0, 10)}...`);
+
       const response = await fetch(fluidApiUrl, {
         method: 'GET',
         headers: {
@@ -146,12 +149,16 @@ fastify.get('/api/droplet/brand-guidelines/:installationId', async (request, rep
         }
       });
 
+      fastify.log.info(`📡 Fluid API response status: ${response.status} ${response.statusText}`);
+
       if (!response.ok) {
-        fastify.log.warn(`Fluid API returned ${response.status}: ${response.statusText}`);
-        throw new Error(`Fluid API error: ${response.status}`);
+        const errorText = await response.text();
+        fastify.log.warn(`Fluid API error response: ${errorText}`);
+        throw new Error(`Fluid API error: ${response.status} - ${errorText}`);
       }
 
       const brandData = await response.json();
+      fastify.log.info(`✅ Brand guidelines received:`, brandData);
 
       const result = {
         data: {
