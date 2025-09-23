@@ -138,7 +138,16 @@ export class ProductService {
         throw new Error(`Failed to fetch products from Fluid: ${response.status} ${response.statusText}`)
       }
 
-      return await response.json()
+      const raw = await response.json()
+
+      // Normalize possible response shapes:
+      // 1) { products: [...], meta: {...} }
+      // 2) { status: 'success', data: { products: [...], meta?: {...} } }
+      // 3) Flat list, rare fallback
+      const products = raw?.products || raw?.data?.products || []
+      const meta = raw?.meta || raw?.data?.meta || raw?.data || raw
+
+      return { products, meta }
     } catch (error: any) {
       clearTimeout(timeoutId)
       if (error.name === 'AbortError') {
@@ -220,8 +229,20 @@ export class ProductService {
               console.log(`Product ${fluidProduct.id} full data:`, JSON.stringify(fluidProduct, null, 2))
             }
             
-            // Fetch product images from the separate images endpoint
-            const imageUrl = await ProductService.fetchProductImages(companyShop, authToken, fluidProduct.id)
+            // Prefer image fields present on the product payload to avoid extra calls
+            let imageUrl = (
+              fluidProduct.image_url ||
+              fluidProduct.imageUrl ||
+              fluidProduct.image ||
+              (Array.isArray(fluidProduct.images) && fluidProduct.images.length > 0
+                ? (fluidProduct.images[0]?.image_url || fluidProduct.images[0]?.url || null)
+                : null)
+            ) as string | null
+
+            // Fallback: fetch images from images endpoint only if not present
+            if (!imageUrl) {
+              imageUrl = await ProductService.fetchProductImages(companyShop, authToken, fluidProduct.id)
+            }
             
             if (syncedCount < 3) {
               console.log(`Product ${fluidProduct.id} fetched image URL:`, imageUrl)

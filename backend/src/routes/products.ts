@@ -75,7 +75,13 @@ export async function productRoutes(fastify: FastifyInstance) {
         })
       }
 
-      // Check cache first
+      // Check DB first
+      const existingProduct = await ProductService.getProductByFluidId(installation.id, productId)
+      if (existingProduct && (existingProduct as any).imageUrl) {
+        return reply.send({ success: true, imageUrl: (existingProduct as any).imageUrl })
+      }
+
+      // Check cache next
       const cacheKey = `${installationId}:${productId}`
       const cached = imageCache.get(cacheKey)
       if (cached && Date.now() - cached.cachedAt < IMAGE_CACHE_TTL_MS) {
@@ -89,6 +95,14 @@ export async function productRoutes(fastify: FastifyInstance) {
           installation.authenticationToken,
           parseInt(productId)
         )
+
+        // Update DB if we found an imageUrl
+        if (imageUrl) {
+          await prisma.$executeRaw`
+            UPDATE products SET "imageUrl" = ${imageUrl}, "updatedAt" = NOW()
+            WHERE "installationId" = ${installation.id} AND "fluidProductId" = ${productId}
+          `
+        }
 
         // Update cache
         imageCache.set(cacheKey, { url: imageUrl, cachedAt: Date.now() })
