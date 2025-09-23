@@ -39,19 +39,6 @@ interface SyncResponse {
   }
 }
 
-interface TestWebhookResponse {
-  success: boolean
-  message: string
-  data: {
-    testOrder: any
-    webhookExpected: string
-    instructions: string
-    installation: {
-      id: string
-      companyName: string
-    }
-  }
-}
 
 interface OrdersTabProps {
   installationId: string
@@ -66,7 +53,6 @@ export function OrdersTab({ installationId, brandGuidelines, onSyncMessage }: Or
   const [orders, setOrders] = useState<Order[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncingOrders, setIsSyncingOrders] = useState(false)
-  const [isTestingWebhook, setIsTestingWebhook] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
@@ -121,33 +107,6 @@ export function OrdersTab({ installationId, brandGuidelines, onSyncMessage }: Or
     }
   }
 
-  // Test webhook by creating a test order
-  const handleTestWebhook = async () => {
-    try {
-      setIsTestingWebhook(true)
-      setError(null)
-      onSyncMessage(null)
-
-      const response = await apiClient.post<TestWebhookResponse>(`/api/orders/${installationId}/test-webhook`)
-      const data = response.data
-
-      if (data.success) {
-        onSyncMessage(`🧪 ${data.message} Check your backend logs for webhook JSON!`)
-
-        // Refresh orders after a short delay to capture any webhook updates
-        setTimeout(async () => {
-          await fetchOrders()
-        }, 2000)
-      } else {
-        setError(data.message || 'Failed to trigger test webhook')
-      }
-    } catch (err: any) {
-      console.error('Error testing webhook:', err)
-      setError(err.response?.data?.message || 'Failed to trigger test webhook')
-    } finally {
-      setIsTestingWebhook(false)
-    }
-  }
 
 
   // Filter and paginate orders
@@ -201,42 +160,30 @@ export function OrdersTab({ installationId, brandGuidelines, onSyncMessage }: Or
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={syncOrders}
-            disabled={isSyncingOrders || isTestingWebhook}
-            className="inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: brandGuidelines?.color
-                ? formatColor(brandGuidelines.color)
-                : '#3b82f6'
-            }}
-          >
-            {isSyncingOrders ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                Syncing...
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Sync Orders
-              </>
-            )}
-          </button>
-          <button
-            onClick={handleTestWebhook}
-            disabled={isSyncingOrders || isTestingWebhook}
-            className="inline-flex items-center px-3 py-1.5 border border-indigo-300 text-indigo-700 bg-indigo-50 text-xs font-medium rounded-md transition-colors hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            {isTestingWebhook ? 'Testing...' : 'Test Webhook'}
-          </button>
-        </div>
+        <button
+          onClick={syncOrders}
+          disabled={isSyncingOrders}
+          className="inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            backgroundColor: brandGuidelines?.color
+              ? formatColor(brandGuidelines.color)
+              : '#3b82f6'
+          }}
+        >
+          {isSyncingOrders ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+              Syncing...
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Sync Orders
+            </>
+          )}
+        </button>
       </div>
 
       {/* Error Display */}
@@ -371,8 +318,11 @@ export function OrdersTab({ installationId, brandGuidelines, onSyncMessage }: Or
             </svg>
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
-          <p className="text-gray-600">
-            Use the sync button above to sync orders from Fluid
+          <p className="text-gray-600 mb-2">
+            Orders will automatically appear here when received via webhooks, or use the sync button to sync existing orders from Fluid
+          </p>
+          <p className="text-sm text-blue-600">
+            ✨ Real-time webhook processing is now enabled!
           </p>
         </div>
       )}
