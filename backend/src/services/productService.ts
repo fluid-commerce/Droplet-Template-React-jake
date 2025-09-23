@@ -6,10 +6,14 @@ export interface FluidProduct {
   sku?: string
   description?: string
   image_url?: string
+  imageUrl?: string
+  image?: string
+  images?: any[]
   status?: string
   price?: string
   in_stock?: boolean
   public?: boolean
+  [key: string]: any // Allow for additional fields from Fluid API
 }
 
 export interface FluidProductsResponse {
@@ -165,6 +169,19 @@ export class ProductService {
         // Process each product
         for (const fluidProduct of fluidResponse.products) {
           try {
+            // Debug: Log first few products to check image URLs
+            if (syncedCount < 3) {
+              console.log(`Product ${fluidProduct.id} image_url:`, fluidProduct.image_url)
+              console.log(`Product ${fluidProduct.id} full data:`, JSON.stringify(fluidProduct, null, 2))
+            }
+            
+            // Try to find image URL from various possible field names
+            const imageUrl = fluidProduct.image_url || 
+                           fluidProduct.imageUrl || 
+                           fluidProduct.image || 
+                           (fluidProduct.images && fluidProduct.images[0]?.url) ||
+                           null
+
             await prisma.$executeRaw`
               INSERT INTO products (
                 id, "installationId", "fluidProductId", title, sku, description, 
@@ -172,7 +189,7 @@ export class ProductService {
               ) VALUES (
                 gen_random_uuid(), ${installationId}, ${fluidProduct.id.toString()}, 
                 ${fluidProduct.title}, ${fluidProduct.sku || null}, ${fluidProduct.description || null},
-                ${fluidProduct.image_url || null}, ${fluidProduct.status || null}, 
+                ${imageUrl}, ${fluidProduct.status || null}, 
                 ${fluidProduct.price || null}, ${fluidProduct.in_stock ?? true}, 
                 ${fluidProduct.public ?? true}, NOW(), NOW()
               )
@@ -249,21 +266,19 @@ export class ProductService {
       let syncedCount = 0
       let errorCount = 0
 
+      // Get total pages for progress tracking
+      const firstResponse = await this.fetchOrdersFromFluid(companyShop, authToken, 1, 50)
+      const totalPages = firstResponse.meta.pagination?.total_pages || 
+                        Math.ceil((firstResponse.meta.total_count || 0) / 50)
+      
+      console.log(`🚀 Starting orders sync: ${firstResponse.meta.total_count || 0} orders across ${totalPages} pages`)
+
       while (hasMorePages) {
         const fluidResponse = await this.fetchOrdersFromFluid(companyShop, authToken, page, 50)
         
-        console.log(`📄 Processing page ${page} of orders:`, {
-          ordersCount: fluidResponse.orders.length,
-          meta: fluidResponse.meta,
-          hasPagination: !!fluidResponse.meta.pagination,
-          currentPage: fluidResponse.meta.current_page,
-          totalCount: fluidResponse.meta.total_count,
-          paginationObject: fluidResponse.meta.pagination
-        })
-        
-        // Log the first few order IDs to verify we're getting real data
-        if (fluidResponse.orders.length > 0) {
-          console.log(`📋 Sample order IDs:`, fluidResponse.orders.slice(0, 3).map(o => o.id))
+        // Show progress every 10 pages or on first/last page
+        if (page === 1 || page % 10 === 0 || page === totalPages) {
+          console.log(`📄 Processing page ${page}/${totalPages} (${Math.round((page/totalPages)*100)}%) - ${syncedCount} synced, ${errorCount} errors`)
         }
         
         // Process each order
@@ -307,25 +322,18 @@ export class ProductService {
         // Check if there are more pages
         if (fluidResponse.meta.pagination) {
           hasMorePages = page < fluidResponse.meta.pagination.total_pages
-          console.log(`🔄 Pagination logic (pagination object): page ${page} < ${fluidResponse.meta.pagination.total_pages} = ${hasMorePages}`)
           page++
         } else if (fluidResponse.meta.current_page && fluidResponse.meta.total_count) {
           // Fallback to current_page and total_count if pagination object doesn't exist
-          const totalPages = Math.ceil(fluidResponse.meta.total_count / 50) // Assuming 50 per page
-          hasMorePages = page < totalPages
-          console.log(`🔄 Pagination logic (fallback): page ${page} < ${totalPages} (total: ${fluidResponse.meta.total_count}) = ${hasMorePages}`)
+          const calculatedTotalPages = Math.ceil(fluidResponse.meta.total_count / 50)
+          hasMorePages = page < calculatedTotalPages
           page++
         } else {
           hasMorePages = false
-          console.log(`🔄 Pagination logic (no pagination data): hasMorePages = false`)
         }
       }
 
-      console.log(`✅ Orders sync completed:`, {
-        totalSynced: syncedCount,
-        totalErrors: errorCount,
-        totalPages: page - 1
-      })
+      console.log(`✅ Orders sync completed: ${syncedCount} synced, ${errorCount} errors (${totalPages} pages processed)`)
       
       return { synced: syncedCount, errors: errorCount }
     } catch (error) {
@@ -373,8 +381,6 @@ export class ProductService {
       let response = null;
 
       for (const endpoint of possibleEndpoints) {
-        console.log(`🔍 Trying orders API endpoint: ${endpoint}`);
-
         try {
           response = await fetch(endpoint, {
             method: 'GET',
@@ -386,25 +392,12 @@ export class ProductService {
           });
 
           if (response.ok) {
-            console.log(`✅ Success with orders endpoint: ${endpoint}`);
             break;
           } else {
-            console.log(`❌ Failed with ${endpoint}: ${response.status} ${response.statusText}`);
-            // Try to get response body for more details
-            try {
-              const errorBody = await response.text();
-              console.log(`❌ Error response body: ${errorBody}`);
-            } catch (bodyError) {
-              console.log(`❌ Could not read error response body`);
-            }
+            console.log(`❌ Orders endpoint failed: ${response.status} ${response.statusText}`);
           }
         } catch (endpointError: any) {
-          console.log(`❌ Error with ${endpoint}: ${endpointError?.message || endpointError}`);
-          console.log(`❌ Error type: ${endpointError?.name}`);
-          console.log(`❌ Error code: ${endpointError?.code}`);
-          if (endpointError?.cause) {
-            console.log(`❌ Error cause: ${endpointError.cause}`);
-          }
+          console.log(`❌ Orders endpoint error: ${endpointError?.message || endpointError}`);
         }
       }
 
