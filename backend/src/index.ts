@@ -6,7 +6,7 @@ import { randomUUID } from 'crypto';
 import { productRoutes } from './routes/products';
 
 const fastify = Fastify({
-  logger: { level: 'warn' }
+  logger: { level: 'info' }
 });
 
 // Register plugins
