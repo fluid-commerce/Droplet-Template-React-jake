@@ -459,6 +459,152 @@ export async function productRoutes(fastify: FastifyInstance) {
     }
   })
 
+  // Create order in Fluid API
+  fastify.post('/api/orders/:installationId/create', async (request, reply) => {
+    try {
+      const { installationId } = request.params as { installationId: string }
+      const orderData = request.body as any
+
+      // Get installation details
+      const installationResult = await prisma.$queryRaw`
+        SELECT i.*, c.name as "companyName", c."logoUrl" as "companyLogoUrl", c."fluidShop"
+        FROM installations i
+        JOIN companies c ON i."companyId" = c.id
+        WHERE i."fluidId" = ${installationId} AND i."isActive" = true
+        LIMIT 1
+      `
+      const installation = Array.isArray(installationResult) && installationResult.length > 0
+        ? installationResult[0]
+        : null
+
+      if (!installation) {
+        return reply.status(404).send({
+          success: false,
+          message: 'Installation not found or inactive'
+        })
+      }
+
+      if (!(installation as any).authenticationToken) {
+        return reply.status(400).send({
+          success: false,
+          message: 'No authentication token available for this installation'
+        })
+      }
+
+      const fluidShop = (installation as any).fluidShop
+      if (!fluidShop) {
+        return reply.status(400).send({
+          success: false,
+          message: 'Company Fluid shop domain not found. Please reinstall the droplet.'
+        })
+      }
+
+      const companyShop = fluidShop.replace('.fluid.app', '')
+
+      // Create cart first
+      const cartResponse = await fetch(`https://${companyShop}.fluid.app/api/carts`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${(installation as any).authenticationToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          country_code: orderData.countryCode || 'US',
+          fluid_shop: fluidShop,
+          items: orderData.items.map((item: any) => ({
+            variant_id: parseInt(item.variantId),
+            quantity: item.quantity
+          }))
+        })
+      })
+
+      if (!cartResponse.ok) {
+        throw new Error(`Failed to create cart: ${cartResponse.status}`)
+      }
+
+      const cartData = await cartResponse.json()
+      const cartToken = cartData.cart.cart_token
+
+      // Update cart with email
+      await fetch(`https://${companyShop}.fluid.app/api/carts/${cartToken}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${(installation as any).authenticationToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: orderData.email
+        })
+      })
+
+      // Update cart with shipping address
+      await fetch(`https://${companyShop}.fluid.app/api/carts/${cartToken}/address`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${(installation as any).authenticationToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          type: 'ship_to',
+          address: {
+            first_name: orderData.firstName,
+            last_name: orderData.lastName,
+            address1: orderData.address1,
+            address2: orderData.address2 || null,
+            city: orderData.city,
+            state: orderData.state,
+            postal_code: orderData.postalCode,
+            country_code: orderData.countryCode || 'US'
+          }
+        })
+      })
+
+      // Create order from cart
+      const orderResponse = await fetch(`https://${companyShop}.fluid.app/api/orders?cart_token=${cartToken}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${(installation as any).authenticationToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          order: {
+            payment_status: 'marked_paid',
+            financial_status: 'paid',
+            order_status: 'draft',
+            fulfillment_status: 'unfulfilled'
+          }
+        })
+      })
+
+      if (!orderResponse.ok) {
+        const errorText = await orderResponse.text()
+        throw new Error(`Failed to create order: ${orderResponse.status} - ${errorText}`)
+      }
+
+      const orderResult = await orderResponse.json()
+
+      return reply.send({
+        success: true,
+        data: {
+          orderNumber: orderResult.order.order_number,
+          orderId: orderResult.order.id,
+          total: orderResult.order.total,
+          message: `Order ${orderResult.order.order_number} created successfully!`,
+          installation: {
+            id: installation.fluidId,
+            companyName: installation.companyName
+          }
+        }
+      })
+    } catch (error) {
+      fastify.log.error(error)
+      return reply.status(500).send({
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to create order in Fluid'
+      })
+    }
+  })
+
   // Test orders from Fluid API (for testing token functionality)
   fastify.get('/api/orders/:installationId/fluid', async (request, reply) => {
     try {
