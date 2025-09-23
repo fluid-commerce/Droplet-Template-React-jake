@@ -391,6 +391,74 @@ export async function productRoutes(fastify: FastifyInstance) {
     }
   })
 
+  // Test products API with dit_ token (debugging endpoint)
+  fastify.get('/api/products/:installationId/test-dit-token', async (request, reply) => {
+    try {
+      const { installationId } = request.params as { installationId: string }
+
+      // Get installation details
+      const installationResult = await prisma.$queryRaw`
+        SELECT i.*, c.name as "companyName", c."logoUrl" as "companyLogoUrl", c."fluidShop"
+        FROM installations i
+        JOIN companies c ON i."companyId" = c.id
+        WHERE i."fluidId" = ${installationId} AND i."isActive" = true
+        LIMIT 1
+      `
+      const installation = Array.isArray(installationResult) && installationResult.length > 0
+        ? installationResult[0]
+        : null
+
+      if (!installation) {
+        return reply.status(404).send({
+          success: false,
+          message: 'Installation not found or inactive'
+        })
+      }
+
+      const fluidShop = (installation as any).fluidShop
+      const companyShop = fluidShop.replace('.fluid.app', '')
+      const authToken = (installation as any).authenticationToken
+
+      // Test the exact API call
+      const testUrl = `https://${companyShop}.fluid.app/api/company/v1/products?status=active`
+
+      fastify.log.info(`🧪 Testing dit_ token with URL: ${testUrl}`)
+      fastify.log.info(`🧪 Using token: ${authToken?.substring(0, 15)}...`)
+
+      const response = await fetch(testUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const responseText = await response.text()
+
+      fastify.log.info(`🧪 Response status: ${response.status}`)
+      fastify.log.info(`🧪 Response body: ${responseText}`)
+
+      return reply.send({
+        success: true,
+        test_results: {
+          url: testUrl,
+          status: response.status,
+          statusText: response.statusText,
+          response: responseText,
+          token_prefix: authToken?.substring(0, 15)
+        }
+      })
+
+    } catch (error) {
+      fastify.log.error(`Test endpoint error: ${error instanceof Error ? error.message : String(error)}`)
+      return reply.status(500).send({
+        success: false,
+        message: 'Test failed',
+        error: error instanceof Error ? error.message : String(error)
+      })
+    }
+  })
+
   // Test orders from Fluid API (for testing token functionality)
   fastify.get('/api/orders/:installationId/fluid', async (request, reply) => {
     try {

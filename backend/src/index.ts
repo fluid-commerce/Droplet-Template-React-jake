@@ -433,14 +433,22 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
             const installationData = await installationResponse.json();
             fastify.log.info(`✅ Got installation data from Fluid API`);
 
-            // Extract the cdrtkn_ authentication token from the response
-            const authToken = installationData.authentication_token;
+            // Extract the authentication token from the response
+            // The response structure is: { droplet_installation: { authentication_token: "..." } }
+            const authToken = installationData.droplet_installation?.authentication_token || installationData.authentication_token;
 
-            if (authToken && authToken.startsWith('cdrtkn_')) {
+            if (authToken) {
               companyApiToken = authToken;
-              fastify.log.info(`✅ Successfully obtained cdrtkn_ token: ${authToken.substring(0, 15)}...`);
+              if (authToken.startsWith('cdrtkn_')) {
+                fastify.log.info(`✅ Successfully obtained cdrtkn_ token: ${authToken.substring(0, 15)}...`);
+              } else if (authToken.startsWith('dit_')) {
+                fastify.log.info(`✅ Got dit_ token from Fluid API: ${authToken.substring(0, 15)}...`);
+                fastify.log.info(`📝 Note: Fluid docs mention cdrtkn_ but we received dit_ - this may be the correct token format now`);
+              } else {
+                fastify.log.warn(`⚠️ Unknown token format: ${authToken.substring(0, 10)}...`);
+              }
             } else {
-              fastify.log.warn(`⚠️ Expected cdrtkn_ token but got: ${authToken?.substring(0, 10)}...`);
+              fastify.log.warn(`⚠️ No authentication token found in installation response`);
               fastify.log.warn(`Raw installation response: ${JSON.stringify(installationData, null, 2)}`);
             }
           } else {

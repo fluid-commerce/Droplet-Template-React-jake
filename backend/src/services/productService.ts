@@ -124,12 +124,10 @@ export class ProductService {
 
       const raw = await response.json()
 
-      // Normalize possible response shapes:
-      // 1) { products: [...], meta: {...} }
-      // 2) { status: 'success', data: { products: [...], meta?: {...} } }
-      // 3) Flat list, rare fallback
-      const products = raw?.products || raw?.data?.products || []
-      const meta = raw?.meta || raw?.data?.meta || raw?.data || raw
+      // According to updated Fluid API docs, response format is:
+      // { products: [...], meta: { request_id, timestamp, pagination } }
+      const products = raw?.products || []
+      const meta = raw?.meta || {}
 
       return { products, meta }
     } catch (error: any) {
