@@ -16,6 +16,7 @@ interface DashboardData {
   installationId: string
   authenticationToken?: string // cdrtkn_ token for company API access
   brandGuidelines?: BrandGuidelines
+  fluidShop?: string // Company's Fluid shop domain (e.g., "pokey.fluid.app")
 }
 
 export function DropletDashboard() {
@@ -496,6 +497,22 @@ export function DropletDashboard() {
                         <p className="text-xs text-gray-500 mt-2">
                           Use this token to authenticate API calls on behalf of the company (create orders, sync data, etc.)
                         </p>
+                      </div>
+                    )}
+
+                    {/* Company Fluid Shop */}
+                    {dashboardData?.fluidShop && (
+                      <div className="pt-4 border-t border-gray-200">
+                        <div className="mb-3">
+                          <p className="text-xs sm:text-sm font-medium text-gray-700">Fluid Shop Domain</p>
+                          <p className="text-xs text-gray-500">Company's Fluid store URL</p>
+                        </div>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <p className="text-sm font-mono text-blue-800">{dashboardData.fluidShop}</p>
+                          <p className="text-xs text-blue-600 mt-1">
+                            Subdomain: <span className="font-mono">{dashboardData.fluidShop.replace('.fluid.app', '')}</span>
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>

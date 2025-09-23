@@ -285,7 +285,8 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
         i."isActive",
         i."authenticationToken",
         c.name as "companyName",
-        c."logoUrl"
+        c."logoUrl",
+        c."fluidShop"
       FROM installations i
       JOIN companies c ON i."companyId" = c.id
       WHERE i."fluidId" = ${installationId}
@@ -330,25 +331,24 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
       const { company } = body;
       
       
-      // Create or update company
-      const companyRecord = await prisma.company.upsert({
-        where: { fluidId: company.fluid_company_id.toString() },
-        update: {
-          name: company.name,
-          logoUrl: null, // Fluid doesn't provide logo in webhook
-          updatedAt: new Date()
-        },
-        create: {
-          fluidId: company.fluid_company_id.toString(),
-          name: company.name,
-          logoUrl: null
-        }
-      });
+      // Create or update company using raw SQL to handle the new fluid_shop column
+      const companyRecord = await prisma.$queryRaw`
+        INSERT INTO companies (id, "fluidId", name, "logoUrl", "fluidShop", "createdAt", "updatedAt")
+        VALUES (${randomUUID()}, ${company.fluid_company_id.toString()}, ${company.name}, null, ${company.fluid_shop}, NOW(), NOW())
+        ON CONFLICT ("fluidId")
+        DO UPDATE SET
+          name = EXCLUDED.name,
+          "fluidShop" = EXCLUDED."fluidShop",
+          "updatedAt" = NOW()
+        RETURNING id, "fluidId", name, "fluidShop"
+      ` as any[];
+
+      const companyData = companyRecord[0];
 
       // Create or update installation using raw SQL to handle the new column
       const installation = await prisma.$queryRaw`
         INSERT INTO installations (id, "companyId", "fluidId", "authenticationToken", "isActive", "createdAt", "updatedAt")
-        VALUES (${randomUUID()}, ${companyRecord.id}, ${company.droplet_installation_uuid}, ${company.authentication_token}, true, NOW(), NOW())
+        VALUES (${randomUUID()}, ${companyData.id}, ${company.droplet_installation_uuid}, ${company.authentication_token}, true, NOW(), NOW())
         ON CONFLICT ("fluidId") 
         DO UPDATE SET 
           "isActive" = true,

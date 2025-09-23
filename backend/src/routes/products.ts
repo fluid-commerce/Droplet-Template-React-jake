@@ -10,7 +10,7 @@ export async function productRoutes(fastify: FastifyInstance) {
       
       // Verify installation exists and is active
       const installationResult = await prisma.$queryRaw`
-        SELECT i.*, c.name as "companyName", c."logoUrl" as "companyLogoUrl"
+        SELECT i.*, c.name as "companyName", c."logoUrl" as "companyLogoUrl", c."fluidShop"
         FROM installations i
         JOIN companies c ON i."companyId" = c.id
         WHERE i."fluidId" = ${installationId} AND i."isActive" = true
@@ -55,7 +55,7 @@ export async function productRoutes(fastify: FastifyInstance) {
       
       // Get installation details
       const installationResult = await prisma.$queryRaw`
-        SELECT i.*, c.name as "companyName", c."logoUrl" as "companyLogoUrl"
+        SELECT i.*, c.name as "companyName", c."logoUrl" as "companyLogoUrl", c."fluidShop"
         FROM installations i
         JOIN companies c ON i."companyId" = c.id
         WHERE i."fluidId" = ${installationId} AND i."isActive" = true
@@ -79,9 +79,17 @@ export async function productRoutes(fastify: FastifyInstance) {
         })
       }
 
-      // Extract company shop from Fluid company ID (assuming format like "tacobell.fluid.app")
-      // For now, we'll use a default or extract from company data
-      const companyShop = installation.companyName.toLowerCase().replace(/\s+/g, '')
+      // Get company subdomain from stored fluidShop
+      const fluidShop = (installation as any).fluidShop
+      if (!fluidShop) {
+        return reply.status(400).send({
+          success: false,
+          message: 'Company Fluid shop domain not found. Please reinstall the droplet.'
+        })
+      }
+
+      // Extract subdomain (e.g., "pokey" from "pokey.fluid.app")
+      const companyShop = fluidShop.replace('.fluid.app', '')
 
       // Sync products from Fluid
       const syncResult = await ProductService.syncProductsFromFluid(
@@ -118,7 +126,7 @@ export async function productRoutes(fastify: FastifyInstance) {
       
       // Get installation details
       const installationResult = await prisma.$queryRaw`
-        SELECT i.*, c.name as "companyName", c."logoUrl" as "companyLogoUrl"
+        SELECT i.*, c.name as "companyName", c."logoUrl" as "companyLogoUrl", c."fluidShop"
         FROM installations i
         JOIN companies c ON i."companyId" = c.id
         WHERE i."fluidId" = ${installationId} AND i."isActive" = true
@@ -142,7 +150,17 @@ export async function productRoutes(fastify: FastifyInstance) {
         })
       }
 
-      const companyShop = installation.companyName.toLowerCase().replace(/\s+/g, '') + '.fluid.app'
+      // Get company subdomain from stored fluidShop
+      const fluidShop = (installation as any).fluidShop
+      if (!fluidShop) {
+        return reply.status(400).send({
+          success: false,
+          message: 'Company Fluid shop domain not found. Please reinstall the droplet.'
+        })
+      }
+
+      // Extract subdomain (e.g., "pokey" from "pokey.fluid.app")
+      const companyShop = fluidShop.replace('.fluid.app', '')
 
       // Fetch products directly from Fluid API
       const fluidResponse = await ProductService.fetchProductsFromFluid(
