@@ -220,6 +220,53 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
     }
   }
 
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= getTotalPages()) {
+      setCurrentPage(page)
+    }
+  }
+
+  const getPageNumbers = () => {
+    const totalPages = getTotalPages()
+    const current = currentPage
+    const pages: (number | string)[] = []
+    
+    if (totalPages <= 7) {
+      // Show all pages if 7 or fewer
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i)
+      }
+    } else {
+      // Always show first page
+      pages.push(1)
+      
+      if (current <= 4) {
+        // Show first 5 pages, then ellipsis, then last page
+        for (let i = 2; i <= 5; i++) {
+          pages.push(i)
+        }
+        pages.push('...')
+        pages.push(totalPages)
+      } else if (current >= totalPages - 3) {
+        // Show first page, ellipsis, then last 5 pages
+        pages.push('...')
+        for (let i = totalPages - 4; i <= totalPages; i++) {
+          pages.push(i)
+        }
+      } else {
+        // Show first page, ellipsis, current-1, current, current+1, ellipsis, last page
+        pages.push('...')
+        pages.push(current - 1)
+        pages.push(current)
+        pages.push(current + 1)
+        pages.push('...')
+        pages.push(totalPages)
+      }
+    }
+    
+    return pages
+  }
+
   // Fetch products from our database
   const fetchProducts = async () => {
     try {
@@ -749,6 +796,29 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
                           <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       </button>
+                      {getPageNumbers().map((page, index) => (
+                        page === '...' ? (
+                          <span
+                            key={`ellipsis-${index}`}
+                            className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"
+                          >
+                            ...
+                          </span>
+                        ) : (
+                          <button
+                            key={page}
+                            onClick={() => goToPage(page as number)}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              currentPage === page
+                                ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
+                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        )
+                      ))}
+                      
                       <button
                         onClick={goToNextPage}
                         disabled={currentPage === getTotalPages()}
@@ -908,6 +978,29 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
                           <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       </button>
+                      {getPageNumbers().map((page, index) => (
+                        page === '...' ? (
+                          <span
+                            key={`ellipsis-${index}`}
+                            className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"
+                          >
+                            ...
+                          </span>
+                        ) : (
+                          <button
+                            key={page}
+                            onClick={() => goToPage(page as number)}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              currentPage === page
+                                ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
+                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        )
+                      ))}
+                      
                       <button
                         onClick={goToNextPage}
                         disabled={currentPage === getTotalPages()}
