@@ -284,7 +284,7 @@ export class ProductService {
                 gen_random_uuid(), ${installationId}, ${fluidOrder.id.toString()}, 
                 ${fluidOrder.order_number || null}, ${fluidOrder.amount || null}, ${fluidOrder.status || null},
                 ${customerEmail}, ${customerName}, ${fluidOrder.items_count || null},
-                ${JSON.stringify(fluidOrder)}, NOW(), NOW()
+                ${fluidOrder}::jsonb, NOW(), NOW()
               )
               ON CONFLICT ("installationId", "fluidOrderId") 
               DO UPDATE SET
