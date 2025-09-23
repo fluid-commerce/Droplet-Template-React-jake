@@ -3,6 +3,9 @@ import { ProductService } from '../services/productService'
 import { prisma } from '../db'
 
 export async function productRoutes(fastify: FastifyInstance) {
+  // Simple in-memory cache for product images to avoid repeated API calls
+  const imageCache = new Map<string, { url: string | null; cachedAt: number }>()
+  const IMAGE_CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutes
   // Get products for an installation (from our database)
   fastify.get('/api/products/:installationId', async (request, reply) => {
     try {
@@ -72,23 +75,31 @@ export async function productRoutes(fastify: FastifyInstance) {
         })
       }
 
-      // Fetch product image from Fluid API
+      // Check cache first
+      const cacheKey = `${installationId}:${productId}`
+      const cached = imageCache.get(cacheKey)
+      if (cached && Date.now() - cached.cachedAt < IMAGE_CACHE_TTL_MS) {
+        return reply.send({ success: true, imageUrl: cached.url })
+      }
+
+      // Fetch product image from Fluid API on cache miss
       try {
-        console.log(`🔄 Backend: Fetching image for product ${productId} from Fluid API`)
         const imageUrl = await ProductService.fetchProductImages(
           installation.fluidShop,
           installation.authenticationToken,
           parseInt(productId)
         )
-        
-        console.log(`✅ Backend: Got image URL for product ${productId}:`, imageUrl)
-        
+
+        // Update cache
+        imageCache.set(cacheKey, { url: imageUrl, cachedAt: Date.now() })
+
         return reply.send({
           success: true,
           imageUrl: imageUrl
         })
       } catch (error) {
-        console.error(`❌ Backend: Error fetching image for product ${productId}:`, error)
+        // Do not spam logs; log a concise error once
+        fastify.log.error({ err: error, productId }, 'Failed to fetch product image from Fluid API')
         return reply.send({
           success: false,
           imageUrl: null,
