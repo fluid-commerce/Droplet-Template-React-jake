@@ -149,6 +149,51 @@ export class ProductService {
   }
 
   /**
+   * Fetch product images from Fluid API
+   */
+  static async fetchProductImages(
+    companyShop: string,
+    authToken: string,
+    productId: number
+  ): Promise<string | null> {
+    try {
+      const url = `https://${companyShop}.fluid.app/api/company/v1/products/${productId}/images`
+      
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout for images
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        signal: controller.signal
+      })
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        // If images endpoint fails, return null (product might not have images)
+        return null
+      }
+
+      const data = await response.json()
+      
+      // Get the first image URL, sorted by position
+      if (data.images && data.images.length > 0) {
+        const sortedImages = data.images.sort((a: any, b: any) => (a.position || 0) - (b.position || 0))
+        return sortedImages[0].image_url || null
+      }
+      
+      return null
+    } catch (error: any) {
+      // If there's any error fetching images, just return null
+      return null
+    }
+  }
+
+  /**
    * Sync products from Fluid to our database
    */
   static async syncProductsFromFluid(
@@ -175,12 +220,12 @@ export class ProductService {
               console.log(`Product ${fluidProduct.id} full data:`, JSON.stringify(fluidProduct, null, 2))
             }
             
-            // Try to find image URL from various possible field names
-            const imageUrl = fluidProduct.image_url || 
-                           fluidProduct.imageUrl || 
-                           fluidProduct.image || 
-                           (fluidProduct.images && fluidProduct.images[0]?.url) ||
-                           null
+            // Fetch product images from the separate images endpoint
+            const imageUrl = await ProductService.fetchProductImages(companyShop, authToken, fluidProduct.id)
+            
+            if (syncedCount < 3) {
+              console.log(`Product ${fluidProduct.id} fetched image URL:`, imageUrl)
+            }
 
             await prisma.$executeRaw`
               INSERT INTO products (
