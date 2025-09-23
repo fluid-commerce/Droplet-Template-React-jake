@@ -9,30 +9,24 @@ export const apiClient = axios.create({
   },
 })
 
-// Add request interceptor for logging
+// Add request interceptor for error handling
 apiClient.interceptors.request.use(
   (config) => {
-    console.log('🌐 API Request:', config.method?.toUpperCase(), config.url)
-    console.log('🌐 Full URL:', (config.baseURL || '') + (config.url || ''))
-    console.log('🌐 Headers:', config.headers)
     return config
   },
   (error) => {
-    console.error('🌐 API Request Error:', error)
+    console.error('API Request Error:', error)
     return Promise.reject(error)
   }
 )
 
-// Add response interceptor for logging
+// Add response interceptor for error handling
 apiClient.interceptors.response.use(
   (response) => {
-    console.log('✅ API Response:', response.status, response.config.url)
-    console.log('✅ Response data:', response.data)
     return response
   },
   (error) => {
-    console.error('❌ API Response Error:', error.response?.status, error.config?.url, error.response?.data)
-    console.error('❌ Full error object:', error)
+    console.error('API Response Error:', error.response?.status, error.config?.url, error.response?.data)
     return Promise.reject(error)
   }
 )

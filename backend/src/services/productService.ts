@@ -93,7 +93,6 @@ export class ProductService {
       let response = null;
 
       for (const endpoint of possibleEndpoints) {
-        console.log(`🔍 Trying products API endpoint: ${endpoint}`);
 
         try {
           response = await fetch(endpoint, {
@@ -106,25 +105,10 @@ export class ProductService {
           });
 
           if (response.ok) {
-            console.log(`✅ Success with products endpoint: ${endpoint}`);
             break;
           } else {
-            console.log(`❌ Failed with ${endpoint}: ${response.status} ${response.statusText}`);
-            // Try to get response body for more details
-            try {
-              const errorBody = await response.text();
-              console.log(`❌ Error response body: ${errorBody}`);
-            } catch (bodyError) {
-              console.log(`❌ Could not read error response body`);
-            }
           }
         } catch (endpointError: any) {
-          console.log(`❌ Error with ${endpoint}: ${endpointError?.message || endpointError}`);
-          console.log(`❌ Error type: ${endpointError?.name}`);
-          console.log(`❌ Error code: ${endpointError?.code}`);
-          if (endpointError?.cause) {
-            console.log(`❌ Error cause: ${endpointError.cause}`);
-          }
         }
       }
 
@@ -230,11 +214,6 @@ export class ProductService {
         // Process each product
         for (const fluidProduct of fluidResponse.products) {
           try {
-            // Debug: Log first few products to check image URLs
-            if (syncedCount < 3) {
-              console.log(`Product ${fluidProduct.id} image_url:`, fluidProduct.image_url)
-              console.log(`Product ${fluidProduct.id} full data:`, JSON.stringify(fluidProduct, null, 2))
-            }
             
             // Prefer image fields present on the product payload to avoid extra calls
             let imageUrl = (
@@ -251,9 +230,6 @@ export class ProductService {
               imageUrl = await ProductService.fetchProductImages(companyShop, authToken, fluidProduct.id)
             }
             
-            if (syncedCount < 3) {
-              console.log(`Product ${fluidProduct.id} fetched image URL:`, imageUrl)
-            }
 
             await prisma.$executeRaw`
               INSERT INTO products (
@@ -311,16 +287,6 @@ export class ProductService {
       ORDER BY "updatedAt" DESC
     `
     
-    // Debug: Log first few products to check imageUrl in database
-    if (Array.isArray(products) && products.length > 0) {
-      console.log('🔍 Backend: First product from database:', products[0])
-      console.log('🔍 Backend: First product imageUrl:', (products[0] as any).imageUrl)
-      
-      // Check first 3 products for image URLs
-      products.slice(0, 3).forEach((product: any, index: number) => {
-        console.log(`🔍 Backend: Product ${index + 1} (ID: ${product.fluidProductId}) imageUrl:`, product.imageUrl)
-      })
-    }
     
     return products
   }
@@ -338,7 +304,7 @@ export class ProductService {
   }
 
   /**
-   * Sync orders from Fluid to our database
+   * Sync orders from Fluid to our database using batch processing
    */
   static async syncOrdersFromFluid(
     installationId: string,
@@ -349,61 +315,15 @@ export class ProductService {
       // Fetch all orders from Fluid (with pagination)
       let page = 1
       let hasMorePages = true
+      let allOrders: any[] = []
       let syncedCount = 0
       let errorCount = 0
+      const BATCH_SIZE = 100 // Process orders in batches of 100
 
-      // Get total pages for progress tracking
-      const firstResponse = await this.fetchOrdersFromFluid(companyShop, authToken, 1, 50)
-      const totalPages = firstResponse.meta.pagination?.total_pages || 
-                        Math.ceil((firstResponse.meta.total_count || 0) / 50)
-      
-      console.log(`🚀 Starting orders sync: ${firstResponse.meta.total_count || 0} orders across ${totalPages} pages`)
-
+      // First, collect all orders from all pages
       while (hasMorePages) {
         const fluidResponse = await this.fetchOrdersFromFluid(companyShop, authToken, page, 50)
-        
-        // Show progress every 10 pages or on first/last page
-        if (page === 1 || page % 10 === 0 || page === totalPages) {
-          console.log(`📄 Processing page ${page}/${totalPages} (${Math.round((page/totalPages)*100)}%) - ${syncedCount} synced, ${errorCount} errors`)
-        }
-        
-        // Process each order
-        for (const fluidOrder of fluidResponse.orders) {
-          try {
-            // Extract customer information
-            const customerEmail = fluidOrder.customer?.email || null
-            const customerName = fluidOrder.customer?.name || 
-              (fluidOrder.customer?.first_name && fluidOrder.customer?.last_name 
-                ? `${fluidOrder.customer.first_name} ${fluidOrder.customer.last_name}` 
-                : null)
-
-            await prisma.$executeRaw`
-              INSERT INTO orders (
-                id, "installationId", "fluidOrderId", "orderNumber", amount, status,
-                "customerEmail", "customerName", "itemsCount", "orderData", "createdAt", "updatedAt"
-              ) VALUES (
-                gen_random_uuid(), ${installationId}, ${fluidOrder.id.toString()}, 
-                ${fluidOrder.order_number || null}, ${fluidOrder.amount || null}, ${fluidOrder.status || null},
-                ${customerEmail}, ${customerName}, ${fluidOrder.items_count || null},
-                ${fluidOrder}::jsonb, NOW(), NOW()
-              )
-              ON CONFLICT ("installationId", "fluidOrderId") 
-              DO UPDATE SET
-                "orderNumber" = EXCLUDED."orderNumber",
-                amount = EXCLUDED.amount,
-                status = EXCLUDED.status,
-                "customerEmail" = EXCLUDED."customerEmail",
-                "customerName" = EXCLUDED."customerName",
-                "itemsCount" = EXCLUDED."itemsCount",
-                "orderData" = EXCLUDED."orderData",
-                "updatedAt" = NOW()
-            `
-            syncedCount++
-          } catch (error) {
-            console.error(`Error syncing order ${fluidOrder.id}:`, error)
-            errorCount++
-          }
-        }
+        allOrders.push(...fluidResponse.orders)
 
         // Check if there are more pages
         if (fluidResponse.meta.pagination) {
@@ -419,8 +339,77 @@ export class ProductService {
         }
       }
 
-      console.log(`✅ Orders sync completed: ${syncedCount} synced, ${errorCount} errors (${totalPages} pages processed)`)
-      
+      // Process orders in batches for optimal performance
+      for (let i = 0; i < allOrders.length; i += BATCH_SIZE) {
+        const batch = allOrders.slice(i, i + BATCH_SIZE)
+
+        try {
+          // Prepare batch data
+          const orderValues = batch.map(fluidOrder => {
+            const customerEmail = fluidOrder.customer?.email || null
+            const customerName = fluidOrder.customer?.name ||
+              (fluidOrder.customer?.first_name && fluidOrder.customer?.last_name
+                ? `${fluidOrder.customer.first_name} ${fluidOrder.customer.last_name}`
+                : null)
+
+            return {
+              id: 'gen_random_uuid()',
+              installationId,
+              fluidOrderId: fluidOrder.id.toString(),
+              orderNumber: fluidOrder.order_number || null,
+              amount: fluidOrder.amount || null,
+              status: fluidOrder.status || null,
+              customerEmail,
+              customerName,
+              itemsCount: fluidOrder.items_count || null,
+              orderData: JSON.stringify(fluidOrder),
+              createdAt: 'NOW()',
+              updatedAt: 'NOW()'
+            }
+          })
+
+          // Build batch upsert query
+          const values = orderValues.map((_, index) =>
+            `(gen_random_uuid(), $${index * 11 + 1}, $${index * 11 + 2}, $${index * 11 + 3}, $${index * 11 + 4}, $${index * 11 + 5}, $${index * 11 + 6}, $${index * 11 + 7}, $${index * 11 + 8}, $${index * 11 + 9}::jsonb, NOW(), NOW())`
+          ).join(', ')
+
+          const params = orderValues.flatMap(order => [
+            order.installationId,
+            order.fluidOrderId,
+            order.orderNumber,
+            order.amount,
+            order.status,
+            order.customerEmail,
+            order.customerName,
+            order.itemsCount,
+            order.orderData
+          ])
+
+          // Execute batch upsert
+          await prisma.$executeRawUnsafe(`
+            INSERT INTO orders (
+              id, "installationId", "fluidOrderId", "orderNumber", amount, status,
+              "customerEmail", "customerName", "itemsCount", "orderData", "createdAt", "updatedAt"
+            ) VALUES ${values}
+            ON CONFLICT ("installationId", "fluidOrderId")
+            DO UPDATE SET
+              "orderNumber" = EXCLUDED."orderNumber",
+              amount = EXCLUDED.amount,
+              status = EXCLUDED.status,
+              "customerEmail" = EXCLUDED."customerEmail",
+              "customerName" = EXCLUDED."customerName",
+              "itemsCount" = EXCLUDED."itemsCount",
+              "orderData" = EXCLUDED."orderData",
+              "updatedAt" = NOW()
+          `, ...params)
+
+          syncedCount += batch.length
+        } catch (error) {
+          console.error(`Error syncing batch of ${batch.length} orders:`, error)
+          errorCount += batch.length
+        }
+      }
+
       return { synced: syncedCount, errors: errorCount }
     } catch (error) {
       console.error('Error syncing orders from Fluid:', error)
@@ -480,10 +469,8 @@ export class ProductService {
           if (response.ok) {
             break;
           } else {
-            console.log(`❌ Orders endpoint failed: ${response.status} ${response.statusText}`);
           }
         } catch (endpointError: any) {
-          console.log(`❌ Orders endpoint error: ${endpointError?.message || endpointError}`);
         }
       }
 

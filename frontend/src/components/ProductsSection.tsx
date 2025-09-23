@@ -166,17 +166,6 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
       return <span className="text-gray-400">No items found</span>
     }
 
-    // Debug: Log first order item to see structure
-    if (items.length > 0) {
-      console.log('🔍 Frontend: First order item data:', items[0])
-      console.log('🔍 Frontend: Order item image fields:', {
-        image_url: items[0].image_url,
-        imageUrl: items[0].imageUrl,
-        image: items[0].image,
-        product_image: items[0].product_image,
-        product_image_url: items[0].product_image_url
-      })
-    }
 
     // Fetch images for order items if not already fetched
     const itemsNeedingImages = items.filter(item => {
@@ -208,21 +197,13 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
                     src={imageUrl}
                     alt={item.name || item.title || item.product_name || 'Item'}
                     className="w-8 h-8 rounded object-cover flex-shrink-0"
-                    onLoad={() => {
-                      console.log(`✅ Frontend: Order item image loaded for ${item.name || item.title || item.product_name}`)
-                    }}
+                    onLoad={() => {}}
                     onError={(e) => {
-                      console.log(`❌ Frontend: Order item image failed to load for ${item.name || item.title || item.product_name}`)
                       e.currentTarget.style.display = 'none'
                     }}
                   />
                 )
               } else {
-                console.log(`⚠️ Frontend: No image found for order item:`, {
-                  name: item.name || item.title || item.product_name,
-                  productId: productId,
-                  availableFields: Object.keys(item).filter(key => key.toLowerCase().includes('image'))
-                })
                 return (
                   <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center flex-shrink-0">
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -275,11 +256,11 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
       setIsTabLoading(true)
       setActiveTab(tab)
       setCurrentPage(1) // Reset to first page when switching tabs
-      
-      // Show loading for 3 seconds
+
+      // Show loading for a brief moment to prevent flash, then hide
       setTimeout(() => {
         setIsTabLoading(false)
-      }, 3000)
+      }, 300) // Reduced from 3000ms to 300ms
     }
   }
 
@@ -336,16 +317,6 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
       if (data.success) {
         setProducts(data.data.products)
         setCompanyName(data.data.installation.companyName)
-        // Debug: Log first few products to check imageUrl
-        if (data.data.products.length > 0) {
-          console.log('🔍 Frontend: First product data:', data.data.products[0])
-          console.log('🔍 Frontend: First product imageUrl:', data.data.products[0].imageUrl)
-          
-          // Check first 3 products for image URLs
-          data.data.products.slice(0, 3).forEach((product: any, index: number) => {
-            console.log(`🔍 Frontend: Product ${index + 1} (ID: ${product.fluidProductId}) imageUrl:`, product.imageUrl)
-          })
-        }
       } else {
         setError('Failed to fetch products')
       }
@@ -429,34 +400,48 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
     }
   }
 
-  // Fetch product images for order items (with rate limiting)
+  // Fetch product images for order items (optimized batch processing)
   const fetchOrderItemImages = async (orderItems: any[]) => {
-    // Limit to first 5 items to prevent resource exhaustion
-    const limitedItems = orderItems.slice(0, 5)
+    // Limit to first 10 items to prevent resource exhaustion
+    const limitedItems = orderItems.slice(0, 10)
+
+    // Get unique product IDs that haven't been cached yet
+    const uniqueProductIds = Array.from(new Set(
+      limitedItems
+        .map(item => item.product_id || item.id || item.sku)
+        .filter(id => id && !Object.prototype.hasOwnProperty.call(orderItemImages, id))
+    ))
+
+    if (uniqueProductIds.length === 0) return
 
     const imageMap: Record<string, string | null> = {}
 
-    // Process items sequentially with delay to prevent overwhelming the server
-    for (const item of limitedItems) {
-      const productId = item.product_id || item.id || item.sku
-      if (!productId) continue
+    // Process in parallel batches of 3 to balance speed vs server load
+    const BATCH_SIZE = 3
+    for (let i = 0; i < uniqueProductIds.length; i += BATCH_SIZE) {
+      const batch = uniqueProductIds.slice(i, i + BATCH_SIZE)
 
-      // Skip if we've already attempted (cached even if null)
-      if (Object.prototype.hasOwnProperty.call(orderItemImages, productId)) continue
-
-      try {
-        const response = await apiClient.get(`/api/products/${installationId}/image/${productId}`)
-        if (response.data && response.data.success) {
-          imageMap[productId] = response.data.imageUrl || null
-        } else {
+      // Process batch in parallel
+      const batchPromises = batch.map(async (productId) => {
+        try {
+          const response = await apiClient.get(`/api/products/${installationId}/image/${productId}`)
+          if (response.data && response.data.success) {
+            imageMap[productId] = response.data.imageUrl || null
+          } else {
+            imageMap[productId] = null
+          }
+        } catch (error) {
           imageMap[productId] = null
         }
-      } catch (error) {
-        imageMap[productId] = null
-      }
+      })
 
-      // Add small delay between requests
-      await new Promise(resolve => setTimeout(resolve, 100))
+      // Wait for current batch to complete before starting next batch
+      await Promise.all(batchPromises)
+
+      // Small delay between batches to be server-friendly
+      if (i + BATCH_SIZE < uniqueProductIds.length) {
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
     }
 
     setOrderItemImages(prev => ({ ...prev, ...imageMap }))
@@ -472,9 +457,11 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
   }, [searchQuery])
 
   useEffect(() => {
-    // Only fetch data when installationId changes, not when switching tabs
-    fetchProducts()
-    fetchOrders()
+    // Only fetch data when installationId changes and we don't already have data
+    if (installationId && (products.length === 0 || orders.length === 0)) {
+      fetchProducts()
+      fetchOrders()
+    }
   }, [installationId])
 
   // Auto-dismiss sync messages after 3 seconds
@@ -775,11 +762,8 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
                                 className="h-10 w-10 rounded-lg object-cover"
                                 src={product.imageUrl}
                                 alt={product.title}
-                                onLoad={() => {
-                                  console.log(`✅ Frontend: Image loaded successfully for product ${product.fluidProductId}:`, product.imageUrl)
-                                }}
+                                onLoad={() => {}}
                                 onError={(e) => {
-                                  console.log(`❌ Frontend: Image failed to load for product ${product.fluidProductId}:`, product.imageUrl)
                                   // Show placeholder if image fails to load
                                   e.currentTarget.style.display = 'none'
                                   const nextElement = e.currentTarget.nextElementSibling as HTMLElement
@@ -788,10 +772,7 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
                                   }
                                 }}
                               />
-                            ) : (() => {
-                              console.log(`⚠️ Frontend: No imageUrl for product ${product.fluidProductId}`)
-                              return null
-                            })()}
+                            ) : null}
                             <div 
                               className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center"
                               style={{ display: product.imageUrl ? 'none' : 'flex' }}
