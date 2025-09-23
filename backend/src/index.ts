@@ -380,11 +380,25 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
   try {
     const body = request.body as any;
 
+    // Log the full webhook payload for debugging
+    fastify.log.info('🎯 Full Fluid webhook payload received:');
+    fastify.log.info(JSON.stringify(body, null, 2));
+
     // Handle installation events
     if (body.event === 'installed') {
       const { company } = body;
-      
-      
+
+      // Log the specific company authentication token
+      fastify.log.info(`🔑 Company authentication_token from webhook: ${company.authentication_token?.substring(0, 20)}...`);
+      fastify.log.info(`🔍 Token type: ${company.authentication_token?.startsWith('dit_') ? 'dit_ (Droplet Integration Token)' : company.authentication_token?.startsWith('cdrtkn_') ? 'cdrtkn_ (Company API Token)' : 'Unknown type'}`);
+
+      if (company.authentication_token?.startsWith('dit_')) {
+        fastify.log.warn('⚠️ WARNING: Received dit_ token from Fluid webhook, but docs suggest we should get cdrtkn_ for company API access');
+        fastify.log.info('📖 According to Fluid docs, dit_ tokens are for droplet integration, cdrtkn_ tokens are for company API access');
+        fastify.log.info('🤔 This suggests either: 1) Fluid webhook bug, 2) dit_ tokens work for company APIs, 3) Different token request needed');
+      }
+
+
       // Create or update company using raw SQL to handle the new fluid_shop column
       const companyRecord = await prisma.$queryRaw`
         INSERT INTO companies (id, "fluidId", name, "logoUrl", "fluidShop", "createdAt", "updatedAt")
