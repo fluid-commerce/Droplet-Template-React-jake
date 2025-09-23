@@ -64,6 +64,17 @@ export interface FluidOrdersResponse {
 
 export class ProductService {
   /**
+   * Get the best available authentication token for API calls
+   * Priority: companyApiKey > webhookVerificationToken > authenticationToken
+   */
+  static getBestAuthToken(installation: any): string | null {
+    return installation.companyApiKey ||
+           installation.webhookVerificationToken ||
+           installation.authenticationToken ||
+           null;
+  }
+
+  /**
    * Fetch products from Fluid API
    */
   static async fetchProductsFromFluid(

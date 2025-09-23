@@ -312,6 +312,8 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
         i."isActive",
         i."authenticationToken",
         i."companyApiKey",
+        i."webhookVerificationToken",
+        i."companyDropletUuid",
         c.name as "companyName",
         c."logoUrl",
         c."fluidShop"
@@ -332,6 +334,8 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
           i."isActive",
           i."authenticationToken",
           i."companyApiKey",
+          i."webhookVerificationToken",
+          i."companyDropletUuid",
           c.name as "companyName",
           c."logoUrl",
           c."fluidShop"
@@ -366,7 +370,18 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
         installationId: installData.fluidId,
         authenticationToken: installData.authenticationToken, // Include the dit_ token
         companyApiKey: installData.companyApiKey, // Include the company API key
-        fluidShop: installData.fluidShop // Include the company's Fluid shop domain
+        webhookVerificationToken: installData.webhookVerificationToken, // Include webhook verification token
+        companyDropletUuid: installData.companyDropletUuid, // Include company droplet UUID
+        fluidShop: installData.fluidShop, // Include the company's Fluid shop domain
+        // Token availability info
+        tokenInfo: {
+          hasAuthToken: !!installData.authenticationToken,
+          hasCompanyApiKey: !!installData.companyApiKey,
+          hasWebhookToken: !!installData.webhookVerificationToken,
+          authTokenType: installData.authenticationToken ?
+            (installData.authenticationToken.startsWith('dit_') ? 'droplet_installation_token' :
+             installData.authenticationToken.startsWith('cdrtkn_') ? 'company_droplet_token' : 'unknown') : null
+        }
       }
     };
 
@@ -422,13 +437,44 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
   try {
     const body = request.body as any;
 
-    // info logs removed
+    // LOG EVERYTHING - Full webhook payload analysis
+    fastify.log.info('🔍 === FULL WEBHOOK PAYLOAD ANALYSIS ===');
+    fastify.log.info(`📦 Full body: ${JSON.stringify(body, null, 2)}`);
+    fastify.log.info(`📋 Headers: ${JSON.stringify(request.headers, null, 2)}`);
+    fastify.log.info(`🎯 Event type: ${body.event}`);
+    fastify.log.info(`📝 Resource: ${body.resource}`);
+
+    // Check for authentication headers (like Rails controller does)
+    const authHeader = request.headers['auth-token'] || request.headers['x-auth-token'] || request.headers['authorization'];
+    if (authHeader) {
+      fastify.log.info(`🔐 Auth header found: ${typeof authHeader === 'string' ? authHeader.substring(0, 20) + '...' : authHeader}`);
+    }
 
     // Handle installation events
     if (body.event === 'installed') {
       const { company } = body;
 
-      // info logs removed
+      // Log ALL company fields available
+      fastify.log.info('🏢 === COMPANY DATA ANALYSIS ===');
+      fastify.log.info(`🔑 All company keys: ${Object.keys(company || {}).join(', ')}`);
+      fastify.log.info(`📊 Company data: ${JSON.stringify(company, null, 2)}`);
+
+      // Check for all possible token fields
+      const tokenFields = [
+        'authentication_token',
+        'webhook_verification_token',
+        'company_droplet_uuid',
+        'droplet_installation_uuid',
+        'access_token',
+        'api_token',
+        'droplet_token'
+      ];
+
+      tokenFields.forEach(field => {
+        if (company && company[field]) {
+          fastify.log.info(`🎟️ Found ${field}: ${company[field].substring(0, 15)}...`);
+        }
+      });
 
       if (company.authentication_token?.startsWith('dit_')) {
         fastify.log.info('✅ Received dit_ token from Fluid webhook - this is the correct token type for droplet installations');
@@ -504,16 +550,36 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
         fastify.log.error(`Error fetching company API token: ${error}`);
       }
 
-      // Create or update installation using raw SQL to handle the new column
+      // Capture additional tokens if available
+      const webhookVerificationToken = company.webhook_verification_token || null;
+      const companyDropletUuid = company.company_droplet_uuid || null;
+
+      // Log what we're capturing
+      fastify.log.info('💾 === STORING INSTALLATION DATA ===');
+      fastify.log.info(`🏢 Company ID: ${companyData.id}`);
+      fastify.log.info(`🆔 Installation ID: ${company.droplet_installation_uuid}`);
+      fastify.log.info(`🎟️ Auth Token: ${companyApiToken ? companyApiToken.substring(0, 15) + '...' : 'None'}`);
+      fastify.log.info(`🔐 Webhook Token: ${webhookVerificationToken ? webhookVerificationToken.substring(0, 15) + '...' : 'None'}`);
+      fastify.log.info(`🎯 Company Droplet UUID: ${companyDropletUuid || 'None'}`);
+
+      // Create or update installation using raw SQL to handle all new columns
       await prisma.$queryRaw`
-        INSERT INTO installations (id, "companyId", "fluidId", "authenticationToken", "isActive", "createdAt", "updatedAt")
-        VALUES (${randomUUID()}, ${companyData.id}, ${company.droplet_installation_uuid}, ${companyApiToken}, true, NOW(), NOW())
+        INSERT INTO installations (
+          id, "companyId", "fluidId", "authenticationToken",
+          "webhookVerificationToken", "companyDropletUuid", "isActive", "createdAt", "updatedAt"
+        )
+        VALUES (
+          ${randomUUID()}, ${companyData.id}, ${company.droplet_installation_uuid}, ${companyApiToken},
+          ${webhookVerificationToken}, ${companyDropletUuid}, true, NOW(), NOW()
+        )
         ON CONFLICT ("fluidId")
         DO UPDATE SET
           "isActive" = true,
           "authenticationToken" = ${companyApiToken},
+          "webhookVerificationToken" = ${webhookVerificationToken},
+          "companyDropletUuid" = ${companyDropletUuid},
           "updatedAt" = NOW()
-        RETURNING id, "fluidId", "isActive", "authenticationToken"
+        RETURNING id, "fluidId", "isActive", "authenticationToken", "webhookVerificationToken", "companyDropletUuid"
       ` as any[];
 
       // info logs removed

@@ -230,7 +230,7 @@ async function main() {
       logInfo('Required environment variables:')
       logInfo('  FLUID_API_KEY=your_fluid_api_key')
       logInfo('  DROPLET_ID=your_droplet_id')
-      logInfo('  WEBHOOK_URL=https://your-backend.com/api/webhooks/fluid')
+      logInfo('  WEBHOOK_URL=https://your-backend.com/api/webhook/fluid')
       console.log()
       logInfo('Optional environment variables:')
       logInfo('  FLUID_API_URL=https://api.fluid.app (default)')
