@@ -15,6 +15,7 @@ interface DashboardData {
   logoUrl?: string
   installationId: string
   authenticationToken?: string // dit_ token for company API access
+  companyApiKey?: string // Company API token for product access
   brandGuidelines?: BrandGuidelines
   fluidShop?: string // Company's Fluid shop domain (e.g., "pokey.fluid.app")
 }
@@ -30,11 +31,45 @@ export function DropletDashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showToken, setShowToken] = useState(false)
+  const [showCompanyApiKey, setShowCompanyApiKey] = useState(false)
+  const [companyApiKeyInput, setCompanyApiKeyInput] = useState('')
+  const [isEditingCompanyApiKey, setIsEditingCompanyApiKey] = useState(false)
+  const [isSavingCompanyApiKey, setIsSavingCompanyApiKey] = useState(false)
 
   // Helper function to format colors
   const formatColor = (color: string | null | undefined) => {
     if (!color) return undefined
     return color.startsWith('#') ? color : `#${color}`
+  }
+
+  // Function to save company API key
+  const saveCompanyApiKey = async () => {
+    if (!installationId || !companyApiKeyInput.trim()) return
+
+    try {
+      setIsSavingCompanyApiKey(true)
+      const response = await apiClient.post(`/api/droplet/company-api-key/${installationId}`, {
+        companyApiKey: companyApiKeyInput.trim()
+      })
+
+      if (response.data.success) {
+        // Update dashboard data with new company API key
+        setDashboardData(prev => prev ? { ...prev, companyApiKey: companyApiKeyInput.trim() } : null)
+        setIsEditingCompanyApiKey(false)
+        setCompanyApiKeyInput('')
+      }
+    } catch (err: any) {
+      console.error('Error saving company API key:', err)
+      alert('Failed to save company API key. Please try again.')
+    } finally {
+      setIsSavingCompanyApiKey(false)
+    }
+  }
+
+  // Initialize company API key input when editing starts
+  const startEditingCompanyApiKey = () => {
+    setCompanyApiKeyInput(dashboardData?.companyApiKey || '')
+    setIsEditingCompanyApiKey(true)
   }
 
   // Function to fetch brand guidelines from Fluid API
@@ -499,6 +534,108 @@ export function DropletDashboard() {
                         </p>
                       </div>
                     )}
+
+                    {/* Company API Key */}
+                    <div className="pt-4 border-t border-gray-200">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs sm:text-sm font-medium text-gray-700">Company API Token</p>
+                          <p className="text-xs text-gray-500">Authentication token for company API access</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {dashboardData?.companyApiKey && !isEditingCompanyApiKey && (
+                            <button
+                              onClick={() => setShowCompanyApiKey(!showCompanyApiKey)}
+                              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                              title={showCompanyApiKey ? "Hide token" : "Show token"}
+                            >
+                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                {showCompanyApiKey ? (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                                ) : (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                )}
+                              </svg>
+                            </button>
+                          )}
+                          <button
+                            onClick={startEditingCompanyApiKey}
+                            disabled={isEditingCompanyApiKey || isSavingCompanyApiKey}
+                            className="p-2 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Edit company API key"
+                          >
+                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      {isEditingCompanyApiKey ? (
+                        <div className="space-y-3">
+                          <div className="bg-gray-50 rounded-lg p-3">
+                            <input
+                              type="text"
+                              value={companyApiKeyInput}
+                              onChange={(e) => setCompanyApiKeyInput(e.target.value)}
+                              placeholder="Enter your company API token (PT-...)"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={saveCompanyApiKey}
+                              disabled={isSavingCompanyApiKey || !companyApiKeyInput.trim()}
+                              className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isSavingCompanyApiKey ? (
+                                <>
+                                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1.5"></div>
+                                  Saving...
+                                </>
+                              ) : (
+                                'Save'
+                              )}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setIsEditingCompanyApiKey(false)
+                                setCompanyApiKeyInput('')
+                              }}
+                              disabled={isSavingCompanyApiKey}
+                              className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : dashboardData?.companyApiKey ? (
+                        <div>
+                          <div className="bg-gray-900 rounded-lg p-3 overflow-hidden">
+                            <code className="text-green-400 font-mono text-xs sm:text-sm break-all block overflow-wrap-anywhere">
+                              {showCompanyApiKey ? dashboardData.companyApiKey : '••••••••••••••••••••••••••••••••••••••••'}
+                            </code>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">
+                            This token enables product selection dropdown in order creation
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                          <div className="flex items-center">
+                            <svg className="w-4 h-4 text-yellow-600 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                            <div>
+                              <p className="text-xs font-medium text-yellow-800">Company API Token Required</p>
+                              <p className="text-xs text-yellow-700 mt-1">
+                                Add your company API token to enable product selection in order creation
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
                     {/* Company Fluid Shop */}
                     {dashboardData?.fluidShop && (

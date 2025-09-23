@@ -1211,10 +1211,10 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
       {/* Create Order Modal */}
       {showCreateOrderModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
-            <div className="p-6">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md md:max-w-lg lg:max-w-xl max-h-[90vh] overflow-y-auto">
+            <div className="p-4 md:p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Create New Order</h2>
+                <h2 className="text-lg md:text-xl font-semibold text-gray-900">Create New Order</h2>
                 <button
                   onClick={() => setShowCreateOrderModal(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -1229,6 +1229,7 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
                 onSubmit={createOrder}
                 onCancel={() => setShowCreateOrderModal(false)}
                 isLoading={isCreatingOrder}
+                installationId={installationId}
                 brandGuidelines={brandGuidelines}
               />
             </div>
@@ -1244,13 +1245,25 @@ interface CreateOrderFormProps {
   onSubmit: (orderData: any) => void
   onCancel: () => void
   isLoading: boolean
+  installationId: string
   brandGuidelines?: {
     color?: string
     secondary_color?: string
   }
 }
 
-function CreateOrderForm({ onSubmit, onCancel, isLoading, brandGuidelines }: CreateOrderFormProps) {
+interface ProductVariant {
+  variantId: number
+  productTitle: string
+  variantTitle: string
+  sku: string
+  price: string
+  displayPrice: string
+  inStock: boolean
+  label: string
+}
+
+function CreateOrderForm({ onSubmit, onCancel, isLoading, installationId, brandGuidelines }: CreateOrderFormProps) {
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
@@ -1263,11 +1276,39 @@ function CreateOrderForm({ onSubmit, onCancel, isLoading, brandGuidelines }: Cre
     countryCode: 'US',
     items: [{ variantId: '', quantity: 1 }]
   })
+  const [variants, setVariants] = useState<ProductVariant[]>([])
+  const [loadingVariants, setLoadingVariants] = useState(true)
+  const [variantsError, setVariantsError] = useState<string | null>(null)
 
   const formatColor = (color: string | null | undefined) => {
     if (!color) return undefined
     return color.startsWith('#') ? color : `#${color}`
   }
+
+  // Fetch product variants for dropdown
+  useEffect(() => {
+    const fetchVariants = async () => {
+      try {
+        setLoadingVariants(true)
+        setVariantsError(null)
+
+        const response = await apiClient.get(`/api/orders/${installationId}/products`)
+
+        if (response.data.success) {
+          setVariants(response.data.data.variants)
+        } else {
+          setVariantsError('Failed to load products')
+        }
+      } catch (err: any) {
+        console.error('Error fetching variants:', err)
+        setVariantsError(err.response?.data?.message || 'Failed to load products for selection')
+      } finally {
+        setLoadingVariants(false)
+      }
+    }
+
+    fetchVariants()
+  }, [installationId])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -1402,7 +1443,8 @@ function CreateOrderForm({ onSubmit, onCancel, isLoading, brandGuidelines }: Cre
           <button
             type="button"
             onClick={addItem}
-            className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-600 hover:text-blue-500"
+            disabled={loadingVariants || variants.length === 0}
+            className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-600 hover:text-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1410,19 +1452,61 @@ function CreateOrderForm({ onSubmit, onCancel, isLoading, brandGuidelines }: Cre
             Add Item
           </button>
         </div>
+
+        {/* Loading state */}
+        {loadingVariants && (
+          <div className="text-center py-4">
+            <div className="inline-flex items-center">
+              <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mr-2"></div>
+              Loading products...
+            </div>
+          </div>
+        )}
+
+        {/* Error state */}
+        {variantsError && (
+          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md mb-4">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <span className="text-sm text-yellow-800">{variantsError}</span>
+            </div>
+            <p className="text-xs text-yellow-700 mt-1">
+              You can still manually enter variant IDs if you know them.
+            </p>
+          </div>
+        )}
+
         <div className="space-y-3">
           {formData.items.map((item, index) => (
             <div key={index} className="flex items-center gap-3 p-3 border border-gray-200 rounded-md">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Variant ID *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g., 61868"
-                  value={item.variantId}
-                  onChange={(e) => updateItem(index, 'variantId', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Product *</label>
+                {!loadingVariants && variants.length > 0 ? (
+                  <select
+                    required
+                    value={item.variantId}
+                    onChange={(e) => updateItem(index, 'variantId', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select a product...</option>
+                    {variants.map((variant) => (
+                      <option key={variant.variantId} value={variant.variantId}>
+                        {variant.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    required
+                    placeholder="Enter variant ID manually (e.g., 61868)"
+                    value={item.variantId}
+                    onChange={(e) => updateItem(index, 'variantId', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                )}
               </div>
               <div className="w-24">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Qty *</label>

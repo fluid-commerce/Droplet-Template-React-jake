@@ -32,7 +32,8 @@ model Installation {
   id                  String   @id @default(cuid())
   companyId           String
   fluidId             String   @unique // Fluid installation ID
-  authenticationToken String?  // cdrtkn_ token for company API access
+  authenticationToken String?  // dit_ token for company API access
+  companyApiKey       String?  // Company API token for product access (PT-...)
   isActive            Boolean  @default(true)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt

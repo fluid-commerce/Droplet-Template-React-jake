@@ -311,6 +311,7 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
         i."fluidId",
         i."isActive",
         i."authenticationToken",
+        i."companyApiKey",
         c.name as "companyName",
         c."logoUrl",
         c."fluidShop"
@@ -330,6 +331,7 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
           i."fluidId",
           i."isActive",
           i."authenticationToken",
+          i."companyApiKey",
           c.name as "companyName",
           c."logoUrl",
           c."fluidShop"
@@ -363,6 +365,7 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
         logoUrl: installData.logoUrl,
         installationId: installData.fluidId,
         authenticationToken: installData.authenticationToken, // Include the dit_ token
+        companyApiKey: installData.companyApiKey, // Include the company API key
         fluidShop: installData.fluidShop // Include the company's Fluid shop domain
       }
     };
@@ -373,6 +376,46 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
     return reply.status(500).send({ error: 'Internal server error' });
   }
 });
+
+// Save company API key for installation
+fastify.post('/api/droplet/company-api-key/:installationId', async (request, reply) => {
+  try {
+    const { installationId } = request.params as { installationId: string }
+    const { companyApiKey } = request.body as { companyApiKey: string }
+
+    if (!companyApiKey || !companyApiKey.trim()) {
+      return reply.status(400).send({
+        success: false,
+        message: 'Company API key is required'
+      })
+    }
+
+    // Update the installation with the company API key
+    const updateResult = await prisma.$executeRaw`
+      UPDATE installations
+      SET "companyApiKey" = ${companyApiKey.trim()}, "updatedAt" = NOW()
+      WHERE "fluidId" = ${installationId}
+    `
+
+    if (updateResult === 0) {
+      return reply.status(404).send({
+        success: false,
+        message: 'Installation not found'
+      })
+    }
+
+    return reply.send({
+      success: true,
+      message: 'Company API key saved successfully'
+    })
+  } catch (error) {
+    fastify.log.error(error)
+    return reply.status(500).send({
+      success: false,
+      message: 'Failed to save company API key'
+    })
+  }
+})
 
 // Webhook endpoint for Fluid platform events
 fastify.post('/api/webhook/fluid', async (request, reply) => {

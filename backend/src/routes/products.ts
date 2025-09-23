@@ -459,6 +459,97 @@ export async function productRoutes(fastify: FastifyInstance) {
     }
   })
 
+  // Get products for order creation (using company token if available)
+  fastify.get('/api/orders/:installationId/products', async (request, reply) => {
+    try {
+      const { installationId } = request.params as { installationId: string }
+
+      // Get installation details
+      const installationResult = await prisma.$queryRaw`
+        SELECT i.*, c.name as "companyName", c."logoUrl" as "companyLogoUrl", c."fluidShop"
+        FROM installations i
+        JOIN companies c ON i."companyId" = c.id
+        WHERE i."fluidId" = ${installationId} AND i."isActive" = true
+        LIMIT 1
+      `
+      const installation = Array.isArray(installationResult) && installationResult.length > 0
+        ? installationResult[0]
+        : null
+
+      if (!installation) {
+        return reply.status(404).send({
+          success: false,
+          message: 'Installation not found or inactive'
+        })
+      }
+
+      const fluidShop = (installation as any).fluidShop
+      const companyApiKey = (installation as any).companyApiKey
+
+      if (!fluidShop) {
+        return reply.status(400).send({
+          success: false,
+          message: 'Company Fluid shop domain not found. Please reinstall the droplet.'
+        })
+      }
+
+      if (!companyApiKey) {
+        return reply.status(400).send({
+          success: false,
+          message: 'Company API key not found. Please add your company API token in the dashboard to enable product selection.'
+        })
+      }
+
+      const companyShop = fluidShop.replace('.fluid.app', '')
+
+      // Fetch products using company API key
+      const response = await fetch(`https://${companyShop}.fluid.app/api/company/v1/products?status=active&per_page=100`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${companyApiKey}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch products: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      // Transform products for dropdown usage
+      const productVariants = data.products.flatMap((product: any) =>
+        product.variants.map((variant: any) => ({
+          variantId: variant.id,
+          productTitle: product.title,
+          variantTitle: variant.title || 'Default',
+          sku: variant.sku || product.sku,
+          price: variant.variant_countries?.US?.price || product.price,
+          displayPrice: variant.variant_countries?.US?.display_price || product.display_price,
+          inStock: product.in_stock,
+          label: `${product.title}${variant.title ? ` - ${variant.title}` : ''} (${variant.sku || product.sku || 'No SKU'}) - ${variant.variant_countries?.US?.display_price || product.display_price || 'No price'}`
+        }))
+      )
+
+      return reply.send({
+        success: true,
+        data: {
+          variants: productVariants,
+          installation: {
+            id: installation.fluidId,
+            companyName: installation.companyName
+          }
+        }
+      })
+    } catch (error) {
+      fastify.log.error(error)
+      return reply.status(500).send({
+        success: false,
+        message: 'Failed to fetch products for order creation'
+      })
+    }
+  })
+
   // Create order in Fluid API
   fastify.post('/api/orders/:installationId/create', async (request, reply) => {
     try {
