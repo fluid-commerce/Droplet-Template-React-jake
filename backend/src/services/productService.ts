@@ -252,6 +252,14 @@ export class ProductService {
       while (hasMorePages) {
         const fluidResponse = await this.fetchOrdersFromFluid(companyShop, authToken, page, 50)
         
+        console.log(`📄 Processing page ${page} of orders:`, {
+          ordersCount: fluidResponse.orders.length,
+          meta: fluidResponse.meta,
+          hasPagination: !!fluidResponse.meta.pagination,
+          currentPage: fluidResponse.meta.current_page,
+          totalCount: fluidResponse.meta.total_count
+        })
+        
         // Process each order
         for (const fluidOrder of fluidResponse.orders) {
           try {
@@ -304,6 +312,12 @@ export class ProductService {
         }
       }
 
+      console.log(`✅ Orders sync completed:`, {
+        totalSynced: syncedCount,
+        totalErrors: errorCount,
+        totalPages: page - 1
+      })
+      
       return { synced: syncedCount, errors: errorCount }
     } catch (error) {
       console.error('Error syncing orders from Fluid:', error)
