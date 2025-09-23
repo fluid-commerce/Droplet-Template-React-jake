@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import { prisma } from './db';
 import { randomUUID } from 'crypto';
+import { productRoutes } from './routes/products';
 
 const fastify = Fastify({
   logger: true
@@ -381,6 +382,9 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
     return reply.status(500).send({ error: 'Webhook processing failed' });
   }
 });
+
+// Register product routes
+fastify.register(productRoutes);
 
 // Start the server
 const start = async () => {

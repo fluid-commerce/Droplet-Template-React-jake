@@ -1,0 +1,171 @@
+import { FastifyInstance } from 'fastify'
+import { ProductService } from '../services/productService'
+import { prisma } from '../db'
+
+export async function productRoutes(fastify: FastifyInstance) {
+  // Get products for an installation (from our database)
+  fastify.get('/api/products/:installationId', async (request, reply) => {
+    try {
+      const { installationId } = request.params as { installationId: string }
+      
+      // Verify installation exists and is active
+      const installation = await prisma.installation.findFirst({
+        where: {
+          fluidId: installationId,
+          isActive: true
+        },
+        include: {
+          company: true
+        }
+      })
+
+      if (!installation) {
+        return reply.status(404).send({
+          success: false,
+          message: 'Installation not found or inactive'
+        })
+      }
+
+      const products = await ProductService.getProductsForInstallation(installation.id)
+      
+      return reply.send({
+        success: true,
+        data: {
+          products,
+          installation: {
+            id: installation.fluidId,
+            companyName: installation.company.name
+          }
+        }
+      })
+    } catch (error) {
+      fastify.log.error('Error fetching products:', error)
+      return reply.status(500).send({
+        success: false,
+        message: 'Failed to fetch products'
+      })
+    }
+  })
+
+  // Sync products from Fluid API to our database
+  fastify.post('/api/products/:installationId/sync', async (request, reply) => {
+    try {
+      const { installationId } = request.params as { installationId: string }
+      
+      // Get installation details
+      const installation = await prisma.installation.findFirst({
+        where: {
+          fluidId: installationId,
+          isActive: true
+        },
+        include: {
+          company: true
+        }
+      })
+
+      if (!installation) {
+        return reply.status(404).send({
+          success: false,
+          message: 'Installation not found or inactive'
+        })
+      }
+
+      if (!(installation as any).authenticationToken) {
+        return reply.status(400).send({
+          success: false,
+          message: 'No authentication token available for this installation'
+        })
+      }
+
+      // Extract company shop from Fluid company ID (assuming format like "tacobell.fluid.app")
+      // For now, we'll use a default or extract from company data
+      const companyShop = installation.company.name.toLowerCase().replace(/\s+/g, '') + '.fluid.app'
+
+      // Sync products from Fluid
+      const syncResult = await ProductService.syncProductsFromFluid(
+        installation.id,
+        companyShop,
+        (installation as any).authenticationToken
+      )
+
+      return reply.send({
+        success: true,
+        data: {
+          message: `Successfully synced ${syncResult.synced} products from Fluid`,
+          synced: syncResult.synced,
+          errors: syncResult.errors,
+          installation: {
+            id: installation.fluidId,
+            companyName: installation.company.name
+          }
+        }
+      })
+    } catch (error) {
+      fastify.log.error('Error syncing products:', error)
+      return reply.status(500).send({
+        success: false,
+        message: 'Failed to sync products from Fluid'
+      })
+    }
+  })
+
+  // Get products directly from Fluid API (for testing)
+  fastify.get('/api/products/:installationId/fluid', async (request, reply) => {
+    try {
+      const { installationId } = request.params as { installationId: string }
+      
+      // Get installation details
+      const installation = await prisma.installation.findFirst({
+        where: {
+          fluidId: installationId,
+          isActive: true
+        },
+        include: {
+          company: true
+        }
+      })
+
+      if (!installation) {
+        return reply.status(404).send({
+          success: false,
+          message: 'Installation not found or inactive'
+        })
+      }
+
+      if (!(installation as any).authenticationToken) {
+        return reply.status(400).send({
+          success: false,
+          message: 'No authentication token available for this installation'
+        })
+      }
+
+      const companyShop = installation.company.name.toLowerCase().replace(/\s+/g, '') + '.fluid.app'
+
+      // Fetch products directly from Fluid API
+      const fluidResponse = await ProductService.fetchProductsFromFluid(
+        companyShop,
+        (installation as any).authenticationToken,
+        1,
+        10 // Limit to 10 for testing
+      )
+
+      return reply.send({
+        success: true,
+        data: {
+          products: fluidResponse.products,
+          meta: fluidResponse.meta,
+          installation: {
+            id: installation.fluidId,
+            companyName: installation.company.name
+          }
+        }
+      })
+    } catch (error) {
+      fastify.log.error('Error fetching products from Fluid:', error)
+      return reply.status(500).send({
+        success: false,
+        message: 'Failed to fetch products from Fluid API'
+      })
+    }
+  })
+}

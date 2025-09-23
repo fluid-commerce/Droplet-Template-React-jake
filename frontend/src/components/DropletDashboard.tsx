@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { apiClient } from '../lib/api'
+import { ProductsSection } from './ProductsSection'
 
 interface BrandGuidelines {
   name: string
@@ -589,6 +590,83 @@ export function DropletDashboard() {
                 </details>
               </div>
             )}
+
+            {/* Webhooks and API Integration - Collapsible */}
+            <div className="bg-gray-50 rounded-2xl overflow-hidden">
+              <details className="group">
+                <summary className="flex items-center justify-between p-4 sm:p-6 cursor-pointer hover:bg-gray-100 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      style={{
+                        backgroundColor: dashboardData?.brandGuidelines?.color 
+                          ? `${formatColor(dashboardData.brandGuidelines.color)}20`
+                          : '#10b98120'
+                      }}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{
+                        color: dashboardData?.brandGuidelines?.color 
+                          ? formatColor(dashboardData.brandGuidelines.color)
+                          : '#10b981'
+                      }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Webhooks and API Integration</h3>
+                      <p className="text-xs sm:text-sm text-gray-500">Examples of syncing data between Fluid and your droplet</p>
+                    </div>
+                  </div>
+                  <svg className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </summary>
+                
+                <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                  <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 space-y-4">
+                    <div>
+                      <p className="text-sm text-gray-700 leading-relaxed mb-4">
+                        This section demonstrates how to sync data between Fluid and your droplet. 
+                        You can pull products from Fluid's API and store them in your database.
+                      </p>
+                      
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <h4 className="font-semibold text-gray-900 mb-2 flex items-center text-sm">
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{
+                            color: dashboardData?.brandGuidelines?.color 
+                              ? formatColor(dashboardData.brandGuidelines.color)
+                              : '#2563eb'
+                          }}>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          Products Sync Example
+                        </h4>
+                        <p className="text-xs text-gray-700 mb-3 leading-relaxed">
+                          Click the "Sync from Fluid" button below to fetch products from Fluid's API 
+                          and store them in your droplet's database. This demonstrates the complete 
+                          integration workflow.
+                        </p>
+                        <div className="text-xs text-gray-600 bg-white rounded p-3 border border-gray-200">
+                          <p className="font-medium text-gray-700 mb-1">How it works:</p>
+                          <ul className="space-y-1 text-gray-600">
+                            <li>• Uses your company's authentication token (cdrtkn_)</li>
+                            <li>• Calls Fluid's /api/company/v1/products endpoint</li>
+                            <li>• Stores products in your PostgreSQL database</li>
+                            <li>• Displays them in a beautiful table below</li>
+                          </ul>
+                        </div>
+                      </div>
+                      
+                      {/* Products Section */}
+                      <ProductsSection 
+                        installationId={dashboardData?.installationId || ''} 
+                        brandGuidelines={dashboardData?.brandGuidelines}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </details>
+            </div>
           </div>
         </div>
       </div>

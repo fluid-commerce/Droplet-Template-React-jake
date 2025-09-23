@@ -37,6 +37,28 @@ model Installation {
   updatedAt           DateTime @updatedAt
   
   company             Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  products            Product[]
   
   @@map("installations")
+}
+
+model Product {
+  id              String   @id @default(cuid())
+  installationId  String
+  fluidProductId  String   // Fluid product ID
+  title           String
+  sku             String?
+  description     String?
+  imageUrl        String?
+  status          String?  // active, draft, archived
+  price           String?
+  inStock         Boolean  @default(true)
+  public          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  installation    Installation @relation(fields: [installationId], references: [id], onDelete: Cascade)
+  
+  @@unique([installationId, fluidProductId])
+  @@map("products")
 }
