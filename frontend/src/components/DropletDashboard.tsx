@@ -469,14 +469,14 @@ export function DropletDashboard() {
                     {/* API Token inside Installation Details */}
                     {dashboardData?.authenticationToken && (
                       <div className="pt-4 border-t border-gray-200">
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
+                          <div className="flex-1 min-w-0">
                             <p className="text-xs sm:text-sm font-medium text-gray-700">Company API Token</p>
                             <p className="text-xs text-gray-500">Authentication token for company API access</p>
                           </div>
                           <button
                             onClick={() => setShowToken(!showToken)}
-                            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                            className="p-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0 self-start sm:self-auto"
                             title={showToken ? "Hide token" : "Show token"}
                           >
                             <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -489,8 +489,8 @@ export function DropletDashboard() {
                           </button>
                         </div>
                         
-                        <div className="bg-gray-900 rounded-lg p-3">
-                          <code className="text-green-400 font-mono text-xs sm:text-sm break-all block">
+                        <div className="bg-gray-900 rounded-lg p-3 overflow-hidden">
+                          <code className="text-green-400 font-mono text-xs sm:text-sm break-all block overflow-wrap-anywhere">
                             {showToken ? dashboardData.authenticationToken : '••••••••••••••••••••••••••••••••••••••••'}
                           </code>
                         </div>

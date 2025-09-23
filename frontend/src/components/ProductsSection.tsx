@@ -98,12 +98,31 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
   const [companyName, setCompanyName] = useState<string>('')
   const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products')
   const [currentPage, setCurrentPage] = useState(1)
+  const [searchQuery, setSearchQuery] = useState('')
   const itemsPerPage = 10
 
   // Helper function to format colors
   const formatColor = (color: string | null | undefined) => {
     if (!color) return undefined
     return color.startsWith('#') ? color : `#${color}`
+  }
+
+  // Search and filtering helpers
+  const getFilteredOrders = () => {
+    if (!searchQuery.trim()) return orders
+    
+    const query = searchQuery.toLowerCase()
+    return orders.filter(order => {
+      // Search in order number, customer name, customer email, status, and amount
+      return (
+        (order.orderNumber && order.orderNumber.toLowerCase().includes(query)) ||
+        (order.fluidOrderId && order.fluidOrderId.toLowerCase().includes(query)) ||
+        (order.customerName && order.customerName.toLowerCase().includes(query)) ||
+        (order.customerEmail && order.customerEmail.toLowerCase().includes(query)) ||
+        (order.status && order.status.toLowerCase().includes(query)) ||
+        (order.amount && order.amount.toLowerCase().includes(query))
+      )
+    })
   }
 
   // Pagination helpers
@@ -114,14 +133,19 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
   }
 
   const getCurrentOrders = () => {
+    const filteredOrders = getFilteredOrders()
     const startIndex = (currentPage - 1) * itemsPerPage
     const endIndex = startIndex + itemsPerPage
-    return orders.slice(startIndex, endIndex)
+    return filteredOrders.slice(startIndex, endIndex)
   }
 
   const getTotalPages = () => {
-    const items = activeTab === 'products' ? products : orders
-    return Math.ceil(items.length / itemsPerPage)
+    if (activeTab === 'products') {
+      return Math.ceil(products.length / itemsPerPage)
+    } else {
+      const filteredOrders = getFilteredOrders()
+      return Math.ceil(filteredOrders.length / itemsPerPage)
+    }
   }
 
   // Helper function to render order items
@@ -208,6 +232,10 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
       if (data.success) {
         setProducts(data.data.products)
         setCompanyName(data.data.installation.companyName)
+        // Debug: Log first product to check imageUrl
+        if (data.data.products.length > 0) {
+          console.log('First product data:', data.data.products[0])
+        }
       } else {
         setError('Failed to fetch products')
       }
@@ -261,6 +289,8 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
     } catch (err: any) {
       console.error('Error fetching orders:', err)
       setError(err.response?.data?.message || 'Failed to fetch orders')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -293,6 +323,10 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
   useEffect(() => {
     setCurrentPage(1) // Reset to first page when switching tabs
   }, [activeTab])
+
+  useEffect(() => {
+    setCurrentPage(1) // Reset to first page when search query changes
+  }, [searchQuery])
 
   useEffect(() => {
     // Only fetch data when installationId changes, not when switching tabs
@@ -357,30 +391,67 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
           </p>
         </div>
 
-        {/* Tabs */}
-        <div className="flex bg-gray-100 rounded-lg p-1">
-          <button
-            onClick={() => setActiveTab('products')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'products'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Products
-          </button>
-          <button
-            onClick={() => setActiveTab('orders')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'orders'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Orders
-          </button>
+        {/* Tabs - Full width on mobile, auto width on desktop */}
+        <div className="w-full sm:w-auto">
+          <div className="flex bg-gray-100 rounded-lg p-1 w-full sm:w-auto">
+            <button
+              onClick={() => setActiveTab('products')}
+              className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'products'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Products
+            </button>
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'orders'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Orders
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Search bar for orders */}
+      {activeTab === 'orders' && (
+        <div className="mb-4">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Search orders by number, customer, email, status, or amount..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <div className="mt-2 text-sm text-gray-600">
+              Found {getFilteredOrders().length} order{getFilteredOrders().length !== 1 ? 's' : ''} matching "{searchQuery}"
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Action buttons */}
       <div className="flex flex-col sm:flex-row gap-2">
@@ -546,18 +617,31 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
                     <tr key={product.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          {product.imageUrl && (
-                            <div className="flex-shrink-0 h-10 w-10 mr-3">
+                          <div className="flex-shrink-0 h-10 w-10 mr-3">
+                            {product.imageUrl ? (
                               <img
                                 className="h-10 w-10 rounded-lg object-cover"
                                 src={product.imageUrl}
                                 alt={product.title}
                                 onError={(e) => {
+                                  // Show placeholder if image fails to load
                                   e.currentTarget.style.display = 'none'
+                                  const nextElement = e.currentTarget.nextElementSibling as HTMLElement
+                                  if (nextElement) {
+                                    nextElement.style.display = 'flex'
+                                  }
                                 }}
                               />
+                            ) : null}
+                            <div 
+                              className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center"
+                              style={{ display: product.imageUrl ? 'none' : 'flex' }}
+                            >
+                              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
                             </div>
-                          )}
+                          </div>
                           <div className="min-w-0 flex-1">
                             <div className="text-sm font-medium text-gray-900 truncate">
                               {product.title}
