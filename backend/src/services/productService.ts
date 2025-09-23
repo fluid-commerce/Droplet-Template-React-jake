@@ -28,12 +28,18 @@ export interface FluidProductsResponse {
 
 export interface FluidOrder {
   id: number
-  order_number: string
-  amount: string
-  status: string
-  created_at: string
-  customer?: any
+  order_number?: string
+  amount?: string
+  status?: string
+  created_at?: string
+  customer?: {
+    email?: string
+    first_name?: string
+    last_name?: string
+    name?: string
+  }
   items_count?: number
+  [key: string]: any // Allow for additional fields from Fluid API
 }
 
 export interface FluidOrdersResponse {
@@ -220,6 +226,89 @@ export class ProductService {
       LIMIT 1
     `
     return Array.isArray(result) && result.length > 0 ? result[0] : null
+  }
+
+  /**
+   * Sync orders from Fluid to our database
+   */
+  static async syncOrdersFromFluid(
+    installationId: string,
+    companyShop: string,
+    authToken: string
+  ): Promise<{ synced: number; errors: number }> {
+    try {
+      // Fetch all orders from Fluid (with pagination)
+      let page = 1
+      let hasMorePages = true
+      let syncedCount = 0
+      let errorCount = 0
+
+      while (hasMorePages) {
+        const fluidResponse = await this.fetchOrdersFromFluid(companyShop, authToken, page, 50)
+        
+        // Process each order
+        for (const fluidOrder of fluidResponse.orders) {
+          try {
+            // Extract customer information
+            const customerEmail = fluidOrder.customer?.email || null
+            const customerName = fluidOrder.customer?.name || 
+              (fluidOrder.customer?.first_name && fluidOrder.customer?.last_name 
+                ? `${fluidOrder.customer.first_name} ${fluidOrder.customer.last_name}` 
+                : null)
+
+            await prisma.$executeRaw`
+              INSERT INTO orders (
+                id, "installationId", "fluidOrderId", "orderNumber", amount, status,
+                "customerEmail", "customerName", "itemsCount", "orderData", "createdAt", "updatedAt"
+              ) VALUES (
+                gen_random_uuid(), ${installationId}, ${fluidOrder.id.toString()}, 
+                ${fluidOrder.order_number || null}, ${fluidOrder.amount || null}, ${fluidOrder.status || null},
+                ${customerEmail}, ${customerName}, ${fluidOrder.items_count || null},
+                ${JSON.stringify(fluidOrder)}, NOW(), NOW()
+              )
+              ON CONFLICT ("installationId", "fluidOrderId") 
+              DO UPDATE SET
+                "orderNumber" = EXCLUDED."orderNumber",
+                amount = EXCLUDED.amount,
+                status = EXCLUDED.status,
+                "customerEmail" = EXCLUDED."customerEmail",
+                "customerName" = EXCLUDED."customerName",
+                "itemsCount" = EXCLUDED."itemsCount",
+                "orderData" = EXCLUDED."orderData",
+                "updatedAt" = NOW()
+            `
+            syncedCount++
+          } catch (error) {
+            console.error(`Error syncing order ${fluidOrder.id}:`, error)
+            errorCount++
+          }
+        }
+
+        // Check if there are more pages
+        if (fluidResponse.meta.pagination) {
+          hasMorePages = page < fluidResponse.meta.pagination.total_pages
+          page++
+        } else {
+          hasMorePages = false
+        }
+      }
+
+      return { synced: syncedCount, errors: errorCount }
+    } catch (error) {
+      console.error('Error syncing orders from Fluid:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get orders from our database for an installation
+   */
+  static async getOrdersForInstallation(installationId: string) {
+    return await prisma.$queryRaw`
+      SELECT * FROM orders 
+      WHERE "installationId" = ${installationId}
+      ORDER BY "updatedAt" DESC
+    `
   }
 
   /**

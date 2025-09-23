@@ -39,6 +39,7 @@ model Installation {
   
   company             Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   products            Product[]
+  orders              Order[]
   
   @@map("installations")
 }
@@ -62,4 +63,24 @@ model Product {
   
   @@unique([installationId, fluidProductId])
   @@map("products")
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  installationId  String
+  fluidOrderId    String   // Fluid order ID
+  orderNumber     String?  // Order number from Fluid
+  amount          String?  // Order amount
+  status          String?  // Order status
+  customerEmail   String?  // Customer email
+  customerName    String?  // Customer name
+  itemsCount      Int?     // Number of items in order
+  orderData       Json?    // Full order data from Fluid API
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  installation    Installation @relation(fields: [installationId], references: [id], onDelete: Cascade)
+  
+  @@unique([installationId, fluidOrderId])
+  @@map("orders")
 }
