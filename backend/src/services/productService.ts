@@ -65,7 +65,7 @@ export class ProductService {
       }
 
       return await response.json()
-    } catch (error) {
+    } catch (error: any) {
       clearTimeout(timeoutId)
       if (error.name === 'AbortError') {
         throw new Error('Request timeout: Fluid API took too long to respond')
