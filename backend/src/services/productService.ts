@@ -49,6 +49,12 @@ export interface FluidOrdersResponse {
     timestamp: string
     current_page?: number
     total_count?: number
+    pagination?: {
+      page: number
+      per_page: number
+      total_pages: number
+      total_count: number
+    }
   }
 }
 
@@ -288,6 +294,11 @@ export class ProductService {
         if (fluidResponse.meta.pagination) {
           hasMorePages = page < fluidResponse.meta.pagination.total_pages
           page++
+        } else if (fluidResponse.meta.current_page && fluidResponse.meta.total_count) {
+          // Fallback to current_page and total_count if pagination object doesn't exist
+          const totalPages = Math.ceil(fluidResponse.meta.total_count / 50) // Assuming 50 per page
+          hasMorePages = page < totalPages
+          page++
         } else {
           hasMorePages = false
         }
@@ -333,8 +344,6 @@ export class ProductService {
       const possibleEndpoints = [
         `https://${companyShop}.fluid.app/api/v202506/orders?${queryParams}`, // Latest version
         `https://${companyShop}.fluid.app/api/v2/orders?${queryParams}`, // v2 version
-        `https://app.nexui.com/api/v202506/orders?company=${companyShop}&${queryParams}`, // nexui with latest
-        `https://app.nexui.com/api/v2/orders?company=${companyShop}&${queryParams}`, // nexui with v2
         `https://api.fluid.app/api/v2/orders?company=${companyShop}&${queryParams}` // global API
       ];
 
