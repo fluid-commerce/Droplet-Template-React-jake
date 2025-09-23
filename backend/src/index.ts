@@ -345,14 +345,51 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
 
       const companyData = companyRecord[0];
 
+      // Get the company API token (cdrtkn_) by calling the droplet installation endpoint
+      let companyApiToken = company.authentication_token; // fallback to dit_ token
+
+      try {
+        fastify.log.info(`🔍 Fetching company API token for installation: ${company.droplet_installation_uuid}`);
+
+        // Extract subdomain from fluid_shop
+        const subdomain = company.fluid_shop ? company.fluid_shop.replace('.fluid.app', '') : null;
+
+        if (subdomain) {
+          const installationResponse = await fetch(
+            `https://${subdomain}.fluid.app/api/droplet_installations/${company.droplet_installation_uuid}`,
+            {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${company.authentication_token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+
+          if (installationResponse.ok) {
+            const installationData = await installationResponse.json();
+            if (installationData.authentication_token && installationData.authentication_token.startsWith('cdrtkn_')) {
+              companyApiToken = installationData.authentication_token;
+              fastify.log.info(`✅ Got company API token: ${companyApiToken.substring(0, 10)}...`);
+            } else {
+              fastify.log.warn(`⚠️ No cdrtkn_ token found in installation response`);
+            }
+          } else {
+            fastify.log.warn(`⚠️ Failed to fetch installation details: ${installationResponse.status}`);
+          }
+        }
+      } catch (error) {
+        fastify.log.error(`Error fetching company API token: ${error}`);
+      }
+
       // Create or update installation using raw SQL to handle the new column
       const installation = await prisma.$queryRaw`
         INSERT INTO installations (id, "companyId", "fluidId", "authenticationToken", "isActive", "createdAt", "updatedAt")
-        VALUES (${randomUUID()}, ${companyData.id}, ${company.droplet_installation_uuid}, ${company.authentication_token}, true, NOW(), NOW())
-        ON CONFLICT ("fluidId") 
-        DO UPDATE SET 
+        VALUES (${randomUUID()}, ${companyData.id}, ${company.droplet_installation_uuid}, ${companyApiToken}, true, NOW(), NOW())
+        ON CONFLICT ("fluidId")
+        DO UPDATE SET
           "isActive" = true,
-          "authenticationToken" = ${company.authentication_token},
+          "authenticationToken" = ${companyApiToken},
           "updatedAt" = NOW()
         RETURNING id, "fluidId", "isActive", "authenticationToken"
       ` as any[];
