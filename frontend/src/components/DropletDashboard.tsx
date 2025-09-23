@@ -197,16 +197,16 @@ export function DropletDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Clean Header with Company Branding */}
-      <div 
-        className="relative"
-        style={{
-          background: dashboardData?.brandGuidelines?.color 
-            ? `linear-gradient(135deg, ${formatColor(dashboardData.brandGuidelines.color)}, ${formatColor(dashboardData.brandGuidelines.secondary_color || dashboardData.brandGuidelines.color)}dd)`
-            : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-        }}
-      >
-        <div className="px-6 py-16">
-          <div className="max-w-4xl mx-auto">
+      <div className="px-6 py-16">
+        <div 
+          className="relative max-w-4xl mx-auto rounded-3xl"
+          style={{
+            background: dashboardData?.brandGuidelines?.color 
+              ? `linear-gradient(135deg, ${formatColor(dashboardData.brandGuidelines.color)}, ${formatColor(dashboardData.brandGuidelines.secondary_color || dashboardData.brandGuidelines.color)}dd)`
+              : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+          }}
+        >
+          <div className="p-8">
             <div className="flex items-center gap-8">
               {/* Company Logo */}
               {(dashboardData?.brandGuidelines?.logo_url || dashboardData?.logoUrl) && (
