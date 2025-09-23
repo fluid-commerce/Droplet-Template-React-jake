@@ -40,6 +40,18 @@ interface SyncResponse {
   }
 }
 
+interface OrdersResponse {
+  success: boolean
+  data: {
+    orders: any[]
+    meta: any
+    installation: {
+      id: string
+      companyName: string
+    }
+  }
+}
+
 interface ProductsSectionProps {
   installationId: string
   brandGuidelines?: {
@@ -52,8 +64,10 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
+  const [isTestingOrders, setIsTestingOrders] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [syncMessage, setSyncMessage] = useState<string | null>(null)
+  const [ordersMessage, setOrdersMessage] = useState<string | null>(null)
   const [companyName, setCompanyName] = useState<string>('')
 
   // Helper function to format colors
@@ -91,10 +105,10 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
       setIsSyncing(true)
       setError(null)
       setSyncMessage(null)
-      
+
       const response = await apiClient.post(`/api/products/${installationId}/sync`)
       const data = response.data as SyncResponse
-      
+
       if (data.success) {
         setSyncMessage(data.data.message)
         // Refresh products after sync
@@ -107,6 +121,29 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
       setError(err.response?.data?.message || 'Failed to sync products from Fluid')
     } finally {
       setIsSyncing(false)
+    }
+  }
+
+  // Test orders from Fluid API
+  const testOrders = async () => {
+    try {
+      setIsTestingOrders(true)
+      setError(null)
+      setOrdersMessage(null)
+
+      const response = await apiClient.get(`/api/orders/${installationId}/fluid`)
+      const data = response.data as OrdersResponse
+
+      if (data.success) {
+        setOrdersMessage(`Successfully fetched ${data.data.orders.length} orders from Fluid API`)
+      } else {
+        setError('Failed to fetch orders')
+      }
+    } catch (err: any) {
+      console.error('Error testing orders:', err)
+      setError(err.response?.data?.message || 'Failed to fetch orders from Fluid')
+    } finally {
+      setIsTestingOrders(false)
     }
   }
 
@@ -136,7 +173,7 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
 
   return (
     <div className="space-y-4">
-      {/* Header with sync button */}
+      {/* Header with sync buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">
@@ -146,61 +183,95 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
             {products.length} products synced from Fluid
           </p>
         </div>
-        
-        <button
-          onClick={syncProducts}
-          disabled={isSyncing}
-          className="inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{
-            backgroundColor: brandGuidelines?.color 
-              ? formatColor(brandGuidelines.color) 
-              : '#3b82f6'
-          }}
-        >
-          {isSyncing ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-              Syncing...
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Sync from Fluid
-            </>
-          )}
-        </button>
+
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button
+            onClick={syncProducts}
+            disabled={isSyncing || isTestingOrders}
+            className="inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              backgroundColor: brandGuidelines?.color
+                ? formatColor(brandGuidelines.color)
+                : '#3b82f6'
+            }}
+          >
+            {isSyncing ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                Syncing...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Sync Products
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={testOrders}
+            disabled={isSyncing || isTestingOrders}
+            className="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700"
+          >
+            {isTestingOrders ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                Testing...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Test Orders API
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Sync message */}
       {syncMessage && (
-        <div 
+        <div
           className="p-4 rounded-lg border"
           style={{
-            backgroundColor: brandGuidelines?.color 
-              ? `${formatColor(brandGuidelines.color)}10` 
+            backgroundColor: brandGuidelines?.color
+              ? `${formatColor(brandGuidelines.color)}10`
               : '#f0f9ff',
-            borderColor: brandGuidelines?.color 
-              ? `${formatColor(brandGuidelines.color)}30` 
+            borderColor: brandGuidelines?.color
+              ? `${formatColor(brandGuidelines.color)}30`
               : '#bae6fd'
           }}
         >
           <div className="flex items-center">
-            <svg 
-              className="w-5 h-5 mr-2" 
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              className="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
               style={{
-                color: brandGuidelines?.color 
-                  ? formatColor(brandGuidelines.color) 
+                color: brandGuidelines?.color
+                  ? formatColor(brandGuidelines.color)
                   : '#0ea5e9'
               }}
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
             <span className="text-sm font-medium text-gray-900">{syncMessage}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Orders message */}
+      {ordersMessage && (
+        <div className="p-4 rounded-lg border bg-green-50 border-green-200">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="text-sm font-medium text-green-800">{ordersMessage}</span>
           </div>
         </div>
       )}

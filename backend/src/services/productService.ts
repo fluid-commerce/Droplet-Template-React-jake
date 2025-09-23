@@ -94,9 +94,21 @@ export class ProductService {
             break;
           } else {
             console.log(`❌ Failed with ${endpoint}: ${response.status} ${response.statusText}`);
+            // Try to get response body for more details
+            try {
+              const errorBody = await response.text();
+              console.log(`❌ Error response body: ${errorBody}`);
+            } catch (bodyError) {
+              console.log(`❌ Could not read error response body`);
+            }
           }
-        } catch (endpointError) {
-          console.log(`❌ Error with ${endpoint}: ${endpointError}`);
+        } catch (endpointError: any) {
+          console.log(`❌ Error with ${endpoint}: ${endpointError?.message || endpointError}`);
+          console.log(`❌ Error type: ${endpointError?.name}`);
+          console.log(`❌ Error code: ${endpointError?.code}`);
+          if (endpointError?.cause) {
+            console.log(`❌ Error cause: ${endpointError.cause}`);
+          }
         }
       }
 
@@ -257,9 +269,21 @@ export class ProductService {
             break;
           } else {
             console.log(`❌ Failed with ${endpoint}: ${response.status} ${response.statusText}`);
+            // Try to get response body for more details
+            try {
+              const errorBody = await response.text();
+              console.log(`❌ Error response body: ${errorBody}`);
+            } catch (bodyError) {
+              console.log(`❌ Could not read error response body`);
+            }
           }
-        } catch (endpointError) {
-          console.log(`❌ Error with ${endpoint}: ${endpointError}`);
+        } catch (endpointError: any) {
+          console.log(`❌ Error with ${endpoint}: ${endpointError?.message || endpointError}`);
+          console.log(`❌ Error type: ${endpointError?.name}`);
+          console.log(`❌ Error code: ${endpointError?.code}`);
+          if (endpointError?.cause) {
+            console.log(`❌ Error cause: ${endpointError.cause}`);
+          }
         }
       }
 
