@@ -256,12 +256,13 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
 
   useEffect(() => {
     setCurrentPage(1) // Reset to first page when switching tabs
-    if (activeTab === 'products') {
-      fetchProducts()
-    } else if (activeTab === 'orders') {
-      fetchOrders()
-    }
-  }, [installationId, activeTab])
+  }, [activeTab])
+
+  useEffect(() => {
+    // Only fetch data when installationId changes, not when switching tabs
+    fetchProducts()
+    fetchOrders()
+  }, [installationId])
 
   if (isLoading) {
     return (
