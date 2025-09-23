@@ -22,13 +22,6 @@ export function DropletDashboard() {
   const installationId = searchParams.get('installation_id') || searchParams.get('dri')
   const fluidApiKey = searchParams.get('fluid_api_key')
   
-  // Debug URL parameters
-  console.log('🔍 URL Parameters Debug:')
-  console.log('  - installation_id:', searchParams.get('installation_id'))
-  console.log('  - dri:', searchParams.get('dri'))
-  console.log('  - fluid_api_key:', fluidApiKey)
-  console.log('  - Final installationId:', installationId)
-  console.log('  - Final fluidApiKey:', fluidApiKey)
   
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [brandGuidelines, setBrandGuidelines] = useState<BrandGuidelines | null>(null)
@@ -44,14 +37,11 @@ export function DropletDashboard() {
   // Function to fetch brand guidelines from Fluid API
   const fetchBrandGuidelines = async (installationId: string, fluidApiKey: string) => {
     try {
-      console.log('🔍 Fetching brand guidelines for:', installationId)
       const response = await apiClient.get(`/api/droplet/brand-guidelines/${installationId}?fluid_api_key=${fluidApiKey}`)
       const brandData = response.data.data
-      console.log('✅ Brand guidelines received:', brandData)
       setBrandGuidelines(brandData)
       return brandData
     } catch (err: any) {
-      console.error('❌ Failed to fetch brand guidelines:', err.response?.data || err.message)
       // Don't fail the whole dashboard if brand guidelines fail
       return null
     }
@@ -59,7 +49,7 @@ export function DropletDashboard() {
 
 
   useEffect(() => {
-  const loadDashboardData = async () => {
+    const loadDashboardData = async () => {
       
       // Check if we're missing both parameters - this indicates we're not in a proper Fluid embed
       if (!installationId && !fluidApiKey) {
@@ -67,7 +57,7 @@ export function DropletDashboard() {
         setIsLoading(false)
         return
       }
-
+      
       if (!installationId) {
         setError('Missing installation ID. Please try reinstalling the droplet from the Fluid marketplace.')
         setIsLoading(false)
@@ -76,34 +66,28 @@ export function DropletDashboard() {
 
       // If we don't have fluid_api_key, try the installation endpoint first
       if (!fluidApiKey) {
-        console.log('⚠️ No fluid_api_key found, trying basic dashboard endpoint')
         try {
           const apiUrl = `/api/droplet/dashboard/${installationId}`
-          console.log('📡 Making API call to:', apiUrl)
           const response = await apiClient.get(apiUrl)
-          console.log('✅ Basic dashboard response:', response.data)
           const dashboardData = response.data.data
           setDashboardData(dashboardData)
           
           // Try to fetch brand guidelines using the authentication token from the response
           if (dashboardData.authenticationToken) {
-            console.log('🔍 Trying to fetch brand guidelines with authentication token:', dashboardData.authenticationToken.substring(0, 10) + '...')
             try {
               const brandData = await fetchBrandGuidelines(installationId, dashboardData.authenticationToken)
               if (brandData) {
-                console.log('✅ Brand guidelines fetched successfully with auth token')
                 dashboardData.brandGuidelines = brandData
                 setDashboardData({...dashboardData})
               }
             } catch (err) {
-              console.error('❌ Failed to fetch brand guidelines with auth token:', err)
+              // Silently fail - brand guidelines are optional
             }
           }
           
           setIsLoading(false)
           return
         } catch (err: any) {
-          console.error('❌ Basic dashboard call failed:', err)
           // Continue to show error about missing API key
         }
       }
@@ -243,25 +227,19 @@ export function DropletDashboard() {
                   <img 
                     src={dashboardData.brandGuidelines?.logo_url || dashboardData.logoUrl} 
                     alt={`${dashboardData.brandGuidelines?.name || dashboardData.companyName} logo`}
-                    className="w-full h-full object-contain"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none'
-                    }}
-                  />
-                </div>
-              )}
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none'
+                  }}
+                />
+              </div>
+            )}
               
               {/* Company Info */}
               <div className="flex-1">
                 <h1 className="text-5xl font-bold text-white mb-3">
                   {dashboardData?.brandGuidelines?.name || dashboardData?.companyName}
                 </h1>
-                <div className="flex items-center gap-4 mt-4">
-                  <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-white font-medium">Active</span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -294,18 +272,18 @@ export function DropletDashboard() {
                         : '#10b981'
                     }}
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
               </div>
               
               <div className="text-center">
                 <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                  Installation Successful!
-                </h2>
+              Installation Successful!
+            </h2>
                 <p className="text-xl text-gray-600 mb-8">
-                  Your Fluid droplet is now active and ready to use.
-                </p>
+              Your Fluid droplet is now active and ready to use.
+            </p>
               </div>
 
               {/* Company Details Accordion */}
@@ -313,32 +291,9 @@ export function DropletDashboard() {
                 <div className="space-y-6">
                   {/* Basic Info */}
                   <div className="bg-gray-50 rounded-2xl p-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div>
-                        <p className="text-sm font-medium text-gray-500 mb-2">Installation ID</p>
-                        <p className="text-lg font-mono text-gray-900 break-all">{dashboardData?.installationId}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500 mb-2">Status</p>
-                        <span 
-                          className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium"
-                          style={{
-                            backgroundColor: dashboardData?.brandGuidelines?.color 
-                              ? `${formatColor(dashboardData.brandGuidelines.color)}20`
-                              : '#dcfce720',
-                            color: dashboardData?.brandGuidelines?.color 
-                              ? formatColor(dashboardData.brandGuidelines.color)
-                              : '#16a34a'
-                          }}
-                        >
-                          <div className="w-2 h-2 rounded-full mr-2" style={{
-                            backgroundColor: dashboardData?.brandGuidelines?.color 
-                              ? formatColor(dashboardData.brandGuidelines.color)
-                              : '#16a34a'
-                          }}></div>
-                          Active
-                        </span>
-                      </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-gray-500 mb-2">Installation ID</p>
+                      <p className="text-lg font-mono text-gray-900 break-all">{dashboardData?.installationId}</p>
                     </div>
                   </div>
 
