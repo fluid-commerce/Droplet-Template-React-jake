@@ -124,6 +124,66 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
     return Math.ceil(items.length / itemsPerPage)
   }
 
+  // Helper function to render order items
+  const renderOrderItems = (order: Order) => {
+    if (!order.orderData) {
+      return <span className="text-gray-400">No items data</span>
+    }
+
+    // Try to extract items from different possible structures
+    const items = order.orderData.items || 
+                  order.orderData.line_items || 
+                  order.orderData.order_items || 
+                  []
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return <span className="text-gray-400">No items found</span>
+    }
+
+    // Show first 3 items, with a count if there are more
+    const displayItems = items.slice(0, 3)
+    const hasMore = items.length > 3
+
+    return (
+      <div className="space-y-2">
+        {displayItems.map((item: any, index: number) => (
+          <div key={index} className="flex items-center space-x-2">
+            {item.image_url || item.imageUrl || item.image ? (
+              <img
+                src={item.image_url || item.imageUrl || item.image}
+                alt={item.name || item.title || item.product_name || 'Item'}
+                className="w-8 h-8 rounded object-cover flex-shrink-0"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                }}
+              />
+            ) : (
+              <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-gray-900 truncate">
+                {item.name || item.title || item.product_name || 'Unknown Item'}
+              </div>
+              <div className="text-xs text-gray-500">
+                Qty: {item.quantity || item.qty || 1}
+                {item.price && ` • $${item.price}`}
+              </div>
+            </div>
+          </div>
+        ))}
+        {hasMore && (
+          <div className="text-xs text-gray-500 pl-10">
+            +{items.length - 3} more items
+          </div>
+        )}
+      </div>
+    )
+  }
+
   const goToNextPage = () => {
     if (currentPage < getTotalPages()) {
       setCurrentPage(currentPage + 1)
@@ -239,6 +299,27 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
     fetchProducts()
     fetchOrders()
   }, [installationId])
+
+  // Auto-dismiss sync messages after 3 seconds
+  useEffect(() => {
+    if (syncMessage) {
+      const timer = setTimeout(() => {
+        setSyncMessage(null)
+      }, 3000)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [syncMessage])
+
+  useEffect(() => {
+    if (ordersSyncMessage) {
+      const timer = setTimeout(() => {
+        setOrdersSyncMessage(null)
+      }, 3000)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [ordersSyncMessage])
 
   if (isLoading) {
     return (
@@ -634,7 +715,7 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Items
+                      Order Items
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date
@@ -686,8 +767,8 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
                           {order.status || 'unknown'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {order.itemsCount || '-'}
+                      <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
+                        {renderOrderItems(order)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(order.createdAt).toLocaleDateString()}
