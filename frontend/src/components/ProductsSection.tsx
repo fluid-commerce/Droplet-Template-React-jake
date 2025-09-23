@@ -92,11 +92,9 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
   const [isSyncingOrders, setIsSyncingOrders] = useState(false)
-  const [isTestingOrders, setIsTestingOrders] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [syncMessage, setSyncMessage] = useState<string | null>(null)
   const [ordersSyncMessage, setOrdersSyncMessage] = useState<string | null>(null)
-  const [ordersMessage, setOrdersMessage] = useState<string | null>(null)
   const [companyName, setCompanyName] = useState<string>('')
   const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products')
   const [currentPage, setCurrentPage] = useState(1)
@@ -231,28 +229,6 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
     }
   }
 
-  // Test orders from Fluid API
-  const testOrders = async () => {
-    try {
-      setIsTestingOrders(true)
-      setError(null)
-      setOrdersMessage(null)
-
-      const response = await apiClient.get(`/api/orders/${installationId}/fluid`)
-      const data = response.data as OrdersResponse
-
-      if (data.success) {
-        setOrdersMessage(`Successfully fetched ${data.data.orders.length} orders from Fluid API`)
-      } else {
-        setError('Failed to fetch orders')
-      }
-    } catch (err: any) {
-      console.error('Error testing orders:', err)
-      setError(err.response?.data?.message || 'Failed to fetch orders from Fluid')
-    } finally {
-      setIsTestingOrders(false)
-    }
-  }
 
   useEffect(() => {
     setCurrentPage(1) // Reset to first page when switching tabs
@@ -330,7 +306,7 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
         {activeTab === 'products' ? (
           <button
             onClick={syncProducts}
-            disabled={isSyncing || isSyncingOrders || isTestingOrders}
+            disabled={isSyncing || isSyncingOrders}
             className="inline-flex items-center px-3 py-1.5 text-white text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               backgroundColor: brandGuidelines?.color
@@ -355,7 +331,7 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
         ) : (
           <button
             onClick={syncOrders}
-            disabled={isSyncing || isSyncingOrders || isTestingOrders}
+            disabled={isSyncing || isSyncingOrders}
             className="inline-flex items-center px-3 py-1.5 text-white text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               backgroundColor: brandGuidelines?.color
@@ -379,25 +355,6 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
           </button>
         )}
 
-        <button
-          onClick={testOrders}
-          disabled={isSyncing || isSyncingOrders || isTestingOrders}
-          className="inline-flex items-center px-3 py-1.5 bg-gray-600 text-white text-xs font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700"
-        >
-          {isTestingOrders ? (
-            <>
-              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1.5"></div>
-              Testing...
-            </>
-          ) : (
-            <>
-              <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Test Orders API
-            </>
-          )}
-        </button>
       </div>
 
       {/* Sync message */}
@@ -464,17 +421,6 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
         </div>
       )}
 
-      {/* Orders message */}
-      {ordersMessage && (
-        <div className="p-4 rounded-lg border bg-green-50 border-green-200">
-          <div className="flex items-center">
-            <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span className="text-sm font-medium text-green-800">{ordersMessage}</span>
-          </div>
-        </div>
-      )}
 
       {/* Error message */}
       {error && (
