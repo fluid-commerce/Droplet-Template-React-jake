@@ -46,17 +46,43 @@ export class ProductService {
     const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
 
     try {
-      const response = await fetch(
-        `https://${companyShop}.fluid.app/api/company/v1/products?${queryParams}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          },
-          signal: controller.signal
+      // Try multiple API endpoints to find the correct one
+      const possibleEndpoints = [
+        `https://${companyShop}.fluid.app/api/company/v1/products?${queryParams}`, // Original
+        `https://app.nexui.com/api/company/v1/products?company=${companyShop}&${queryParams}`, // New API base from dashboard
+        `https://app.nexui.com/api/companies/${companyShop}/products?${queryParams}`, // Alternative structure
+        `https://api.fluid.app/api/company/v1/products?company=${companyShop}&${queryParams}` // Global API fallback
+      ];
+
+      let response = null;
+
+      for (const endpoint of possibleEndpoints) {
+        console.log(`🔍 Trying products API endpoint: ${endpoint}`);
+
+        try {
+          response = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${authToken}`,
+              'Content-Type': 'application/json'
+            },
+            signal: controller.signal
+          });
+
+          if (response.ok) {
+            console.log(`✅ Success with products endpoint: ${endpoint}`);
+            break;
+          } else {
+            console.log(`❌ Failed with ${endpoint}: ${response.status} ${response.statusText}`);
+          }
+        } catch (endpointError) {
+          console.log(`❌ Error with ${endpoint}: ${endpointError}`);
         }
-      )
+      }
+
+      if (!response || !response.ok) {
+        throw new Error(`All product API endpoints failed. Last status: ${response?.status || 'No response'}`);
+      }
 
       clearTimeout(timeoutId)
 

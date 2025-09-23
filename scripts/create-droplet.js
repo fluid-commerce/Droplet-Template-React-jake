@@ -156,6 +156,7 @@ async function createDroplet(config) {
   const dropletData = {
     name: config.dropletName,
     embed_url: config.embedUrl,
+    webhook_url: config.webhookUrl, // Add webhook URL to droplet creation
     active: true,
     categories: config.categories,
     settings: {
