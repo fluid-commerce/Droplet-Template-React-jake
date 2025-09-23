@@ -81,7 +81,7 @@ export async function productRoutes(fastify: FastifyInstance) {
 
       // Extract company shop from Fluid company ID (assuming format like "tacobell.fluid.app")
       // For now, we'll use a default or extract from company data
-      const companyShop = installation.companyName.toLowerCase().replace(/\s+/g, '') + '.fluid.app'
+      const companyShop = installation.companyName.toLowerCase().replace(/\s+/g, '')
 
       // Sync products from Fluid
       const syncResult = await ProductService.syncProductsFromFluid(

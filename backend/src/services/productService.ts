@@ -42,22 +42,36 @@ export class ProductService {
       status: 'active' // Only fetch active products
     })
 
-    const response = await fetch(
-      `https://${companyShop}.fluid.app/api/company/v1/products?${queryParams}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
+    try {
+      const response = await fetch(
+        `https://${companyShop}.fluid.app/api/company/v1/products?${queryParams}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          },
+          signal: controller.signal
         }
+      )
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch products from Fluid: ${response.status} ${response.statusText}`)
       }
-    )
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch products from Fluid: ${response.status} ${response.statusText}`)
+      return await response.json()
+    } catch (error) {
+      clearTimeout(timeoutId)
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout: Fluid API took too long to respond')
+      }
+      throw error
     }
-
-    return await response.json()
   }
 
   /**
