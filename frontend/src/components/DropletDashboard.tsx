@@ -193,30 +193,21 @@ export function DropletDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Modern Header with Company Branding */}
+      {/* Clean Header with Company Branding */}
       <div 
-        className="relative overflow-hidden"
+        className="relative"
         style={{
           background: dashboardData?.brandGuidelines?.color 
             ? `linear-gradient(135deg, ${formatColor(dashboardData.brandGuidelines.color)}, ${formatColor(dashboardData.brandGuidelines.secondary_color || dashboardData.brandGuidelines.color)}dd)`
             : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
         }}
       >
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `radial-gradient(circle at 25% 25%, white 2px, transparent 0),
-                             radial-gradient(circle at 75% 75%, white 2px, transparent 0)`,
-            backgroundSize: '50px 50px'
-          }}></div>
-        </div>
-        
-        <div className="relative px-6 py-16">
+        <div className="px-6 py-16">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center gap-8">
               {/* Company Logo */}
               {(dashboardData?.brandGuidelines?.logo_url || dashboardData?.logoUrl) && (
-                <div className="w-24 h-24 rounded-2xl p-4 shadow-2xl bg-white/95 flex items-center justify-center backdrop-blur-sm">
+                <div className="w-24 h-24 rounded-2xl p-4 shadow-2xl bg-white/95 flex items-center justify-center">
                   <img 
                     src={dashboardData.brandGuidelines?.logo_url || dashboardData.logoUrl} 
                     alt={`${dashboardData.brandGuidelines?.name || dashboardData.companyName} logo`}
@@ -231,18 +222,12 @@ export function DropletDashboard() {
               {/* Company Info */}
               <div className="flex-1">
                 <h1 className="text-5xl font-bold text-white mb-3">
-                  Welcome to your Fluid droplet
-                </h1>
-                <p className="text-2xl text-white/90 font-medium">
                   {dashboardData?.brandGuidelines?.name || dashboardData?.companyName}
-                </p>
+                </h1>
                 <div className="flex items-center gap-4 mt-4">
                   <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
                     <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                     <span className="text-white font-medium">Active</span>
-                  </div>
-                  <div className="text-white/80 text-sm">
-                    Installation ID: <span className="font-mono">{dashboardData?.installationId}</span>
                   </div>
                 </div>
               </div>
@@ -293,24 +278,18 @@ export function DropletDashboard() {
 
               {/* Company Details Accordion */}
               <div className="max-w-4xl mx-auto">
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {/* Basic Info */}
-                  <div className="bg-gray-50 rounded-2xl p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-gray-50 rounded-2xl p-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div>
-                        <p className="text-sm font-medium text-gray-500 mb-1">Company</p>
-                        <p className="text-lg font-semibold text-gray-900">
-                          {dashboardData?.brandGuidelines?.name || dashboardData?.companyName}
-                        </p>
+                        <p className="text-sm font-medium text-gray-500 mb-2">Installation ID</p>
+                        <p className="text-lg font-mono text-gray-900 break-all">{dashboardData?.installationId}</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-500 mb-1">Installation ID</p>
-                        <p className="text-lg font-mono text-gray-900">{dashboardData?.installationId}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500 mb-1">Status</p>
+                        <p className="text-sm font-medium text-gray-500 mb-2">Status</p>
                         <span 
-                          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                          className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium"
                           style={{
                             backgroundColor: dashboardData?.brandGuidelines?.color 
                               ? `${formatColor(dashboardData.brandGuidelines.color)}20`
@@ -335,7 +314,7 @@ export function DropletDashboard() {
                   {dashboardData?.authenticationToken && (
                     <div className="bg-gray-50 rounded-2xl overflow-hidden">
                       <details className="group">
-                        <summary className="flex items-center justify-between p-6 cursor-pointer hover:bg-gray-100 transition-colors">
+                        <summary className="flex items-center justify-between p-8 cursor-pointer hover:bg-gray-100 transition-colors">
                           <div className="flex items-center gap-3">
                             <div 
                               className="w-8 h-8 rounded-lg flex items-center justify-center"
@@ -363,8 +342,8 @@ export function DropletDashboard() {
                           </svg>
                         </summary>
                         
-                        <div className="px-6 pb-6">
-                          <div className="bg-white rounded-xl p-4 border border-gray-200">
+                        <div className="px-8 pb-8">
+                          <div className="bg-white rounded-xl p-6 border border-gray-200">
                             <p className="text-sm font-medium text-gray-700 mb-2">Authentication Token:</p>
                             <div className="bg-gray-900 rounded-lg p-4">
                               <code className="text-green-400 font-mono text-sm break-all block">
@@ -384,7 +363,7 @@ export function DropletDashboard() {
                   {dashboardData?.brandGuidelines && (
                     <div className="bg-gray-50 rounded-2xl overflow-hidden">
                       <details className="group">
-                        <summary className="flex items-center justify-between p-6 cursor-pointer hover:bg-gray-100 transition-colors">
+                        <summary className="flex items-center justify-between p-8 cursor-pointer hover:bg-gray-100 transition-colors">
                           <div className="flex items-center gap-3">
                             <div 
                               className="w-8 h-8 rounded-lg flex items-center justify-center"
@@ -412,8 +391,8 @@ export function DropletDashboard() {
                           </svg>
                         </summary>
                         
-                        <div className="px-6 pb-6">
-                          <div className="bg-white rounded-xl p-6 border border-gray-200">
+                        <div className="px-8 pb-8">
+                          <div className="bg-white rounded-xl p-8 border border-gray-200">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               {/* Colors */}
                               <div>
