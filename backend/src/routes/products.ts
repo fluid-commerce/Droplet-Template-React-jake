@@ -48,6 +48,50 @@ export async function productRoutes(fastify: FastifyInstance) {
     }
   })
 
+  // Get product image by product ID
+  fastify.get('/api/products/:installationId/image/:productId', async (request, reply) => {
+    try {
+      const { installationId, productId } = request.params as { installationId: string, productId: string }
+      
+      // Verify installation exists and is active
+      const installationResult = await prisma.$queryRaw`
+        SELECT i.*, c.name as "companyName", c."logoUrl" as "companyLogoUrl", c."fluidShop", c."fluidApiKey"
+        FROM installations i
+        JOIN companies c ON i."companyId" = c.id
+        WHERE i."fluidId" = ${installationId} AND i."isActive" = true
+        LIMIT 1
+      `
+      const installation = Array.isArray(installationResult) && installationResult.length > 0 
+        ? installationResult[0] 
+        : null
+
+      if (!installation) {
+        return reply.status(404).send({
+          success: false,
+          message: 'Installation not found or inactive'
+        })
+      }
+
+      // Fetch product image from Fluid API
+      const imageUrl = await ProductService.fetchProductImages(
+        installation.fluidShop,
+        installation.fluidApiKey,
+        parseInt(productId)
+      )
+      
+      return reply.send({
+        success: true,
+        imageUrl: imageUrl
+      })
+    } catch (error) {
+      fastify.log.error(error)
+      return reply.status(500).send({
+        success: false,
+        message: 'Failed to fetch product image'
+      })
+    }
+  })
+
   // Sync products from Fluid API to our database
   fastify.post('/api/products/:installationId/sync', async (request, reply) => {
     try {
