@@ -34,12 +34,11 @@ export interface FluidProductsResponse {
 export class ProductService {
   /**
    * Get the best available authentication token for API calls
-   * Priority: companyApiKey > webhookVerificationToken > authenticationToken
+   * Priority: authenticationToken > webhookVerificationToken
    */
   static getBestAuthToken(installation: any): string | null {
-    return installation.companyApiKey ||
+    return installation.authenticationToken ||
            installation.webhookVerificationToken ||
-           installation.authenticationToken ||
            null;
   }
 

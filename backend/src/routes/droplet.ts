@@ -250,7 +250,6 @@ export async function dropletRoutes(fastify: FastifyInstance) {
           i."fluidId",
           i."isActive",
           i."authenticationToken",
-          i."companyApiKey",
           i."webhookVerificationToken",
           i."companyDropletUuid",
           c.name as "companyName",
@@ -272,7 +271,6 @@ export async function dropletRoutes(fastify: FastifyInstance) {
             i."fluidId",
             i."isActive",
             i."authenticationToken",
-            i."companyApiKey",
             i."webhookVerificationToken",
             i."companyDropletUuid",
             c.name as "companyName",
@@ -308,14 +306,12 @@ export async function dropletRoutes(fastify: FastifyInstance) {
           logoUrl: installData.logoUrl,
           installationId: installData.fluidId,
           authenticationToken: installData.authenticationToken, // Include the dit_ token
-          companyApiKey: installData.companyApiKey, // Include the company API key
           webhookVerificationToken: installData.webhookVerificationToken, // Include webhook verification token
           companyDropletUuid: installData.companyDropletUuid, // Include company droplet UUID
           fluidShop: installData.fluidShop, // Include the company's Fluid shop domain
           // Token availability info
           tokenInfo: {
             hasAuthToken: !!installData.authenticationToken,
-            hasCompanyApiKey: !!installData.companyApiKey,
             hasWebhookToken: !!installData.webhookVerificationToken,
             authTokenType: installData.authenticationToken ?
               (installData.authenticationToken.startsWith('dit_') ? 'droplet_installation_token' :
@@ -331,43 +327,4 @@ export async function dropletRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // Save company API key for installation
-  fastify.post('/api/droplet/company-api-key/:installationId', async (request, reply) => {
-    try {
-      const { installationId } = request.params as { installationId: string }
-      const { companyApiKey } = request.body as { companyApiKey: string }
-
-      if (!companyApiKey || !companyApiKey.trim()) {
-        return reply.status(400).send({
-          success: false,
-          message: 'Company API key is required'
-        })
-      }
-
-      // Update the installation with the company API key
-      const updateResult = await prisma.$executeRaw`
-        UPDATE installations
-        SET "companyApiKey" = ${companyApiKey.trim()}, "updatedAt" = NOW()
-        WHERE "fluidId" = ${installationId}
-      `
-
-      if (updateResult === 0) {
-        return reply.status(404).send({
-          success: false,
-          message: 'Installation not found'
-        })
-      }
-
-      return reply.send({
-        success: true,
-        message: 'Company API key saved successfully'
-      })
-    } catch (error) {
-      fastify.log.error(error)
-      return reply.status(500).send({
-        success: false,
-        message: 'Failed to save company API key'
-      })
-    }
-  })
 }

@@ -93,7 +93,7 @@ export async function productRoutes(fastify: FastifyInstance) {
         const companyShop = fluidShop?.replace?.('.fluid.app', '') || fluidShop
 
         // Use company API key if available, fallback to dit token
-        const tokenToUse = (installation as any).companyApiKey || (installation as any).authenticationToken
+        const tokenToUse = (installation as any).authenticationToken
 
         const imageUrl = await ProductService.fetchProductImages(
           companyShop,
@@ -174,7 +174,7 @@ export async function productRoutes(fastify: FastifyInstance) {
         installation.id,
         companyShop,
         (installation as any).authenticationToken,
-        (installation as any).companyApiKey
+        (installation as any).authenticationToken
       )
 
       return reply.send({

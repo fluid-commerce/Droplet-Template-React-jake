@@ -33,7 +33,6 @@ model Installation {
   companyId             String
   fluidId               String   @unique // Fluid installation ID
   authenticationToken   String?  // dit_ token for company API access
-  companyApiKey         String?  // Company API token for product access (PT-...)
   webhookVerificationToken String? // Webhook verification token from Fluid
   companyDropletUuid    String?  // Company droplet UUID
   isActive              Boolean  @default(true)
