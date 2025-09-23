@@ -22,6 +22,14 @@ export function DropletDashboard() {
   const installationId = searchParams.get('installation_id') || searchParams.get('dri')
   const fluidApiKey = searchParams.get('fluid_api_key')
   
+  // Debug URL parameters
+  console.log('🔍 URL Parameters Debug:')
+  console.log('  - installation_id:', searchParams.get('installation_id'))
+  console.log('  - dri:', searchParams.get('dri'))
+  console.log('  - fluid_api_key:', fluidApiKey)
+  console.log('  - Final installationId:', installationId)
+  console.log('  - Final fluidApiKey:', fluidApiKey)
+  
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [brandGuidelines, setBrandGuidelines] = useState<BrandGuidelines | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -68,13 +76,17 @@ export function DropletDashboard() {
 
       // If we don't have fluid_api_key, try the installation endpoint first
       if (!fluidApiKey) {
+        console.log('⚠️ No fluid_api_key found, trying basic dashboard endpoint')
         try {
           const apiUrl = `/api/droplet/dashboard/${installationId}`
+          console.log('📡 Making API call to:', apiUrl)
           const response = await apiClient.get(apiUrl)
+          console.log('✅ Basic dashboard response:', response.data)
           setDashboardData(response.data.data)
           setIsLoading(false)
           return
         } catch (err: any) {
+          console.error('❌ Basic dashboard call failed:', err)
           // Continue to show error about missing API key
         }
       }
