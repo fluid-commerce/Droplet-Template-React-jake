@@ -111,7 +111,7 @@ export class OrderService {
 
           // Build batch upsert query
           const values = orderValues.map((_, index) =>
-            `(gen_random_uuid(), $${index * 11 + 1}, $${index * 11 + 2}, $${index * 11 + 3}, $${index * 11 + 4}, $${index * 11 + 5}, $${index * 11 + 6}, $${index * 11 + 7}, $${index * 11 + 8}, $${index * 11 + 9}::jsonb, NOW(), NOW())`
+            `(gen_random_uuid(), $${index * 9 + 1}, $${index * 9 + 2}, $${index * 9 + 3}, $${index * 9 + 4}, $${index * 9 + 5}, $${index * 9 + 6}, $${index * 9 + 7}, $${index * 9 + 8}::integer, $${index * 9 + 9}::jsonb, NOW(), NOW())`
           ).join(', ')
 
           const params = orderValues.flatMap(order => [
