@@ -506,7 +506,7 @@ export function DropletDashboard() {
 
             {/* Brand Guidelines - Collapsible */}
             {dashboardData?.brandGuidelines && (
-              <div className="bg-gray-50 rounded-2xl overflow-hidden">
+              <div className="bg-gray-50 rounded-2xl overflow-hidden mb-6">
                 <details className="group">
                   <summary className="flex items-center justify-between p-4 sm:p-6 cursor-pointer hover:bg-gray-100 transition-colors">
                     <div className="flex items-center gap-3">
