@@ -395,12 +395,58 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
             fastify.log.info(`📋 Installation API response from ${usedEndpoint}:`);
             fastify.log.info(JSON.stringify(installationData, null, 2));
 
-            if (installationData.authentication_token && installationData.authentication_token.startsWith('cdrtkn_')) {
-              companyApiToken = installationData.authentication_token;
+            // Check all possible fields for cdrtkn_ token
+            const possibleTokenFields = [
+              installationData.authentication_token,
+              installationData.droplet_installation?.authentication_token,
+              installationData.droplet_installation?.company_authentication_token,
+              installationData.company_token,
+              installationData.cdrtkn_token,
+              installationData.droplet_installation?.company_token
+            ];
+
+            let foundToken = null;
+            for (const token of possibleTokenFields) {
+              if (token && typeof token === 'string' && token.startsWith('cdrtkn_')) {
+                foundToken = token;
+                break;
+              }
+            }
+
+            if (foundToken) {
+              companyApiToken = foundToken;
               fastify.log.info(`✅ Got company API token: ${companyApiToken.substring(0, 10)}...`);
             } else {
-              fastify.log.warn(`⚠️ No cdrtkn_ token found. Got token: ${installationData.authentication_token || 'none'}`);
-              fastify.log.warn(`⚠️ Full installation response: ${JSON.stringify(installationData, null, 2)}`);
+              fastify.log.warn(`⚠️ No cdrtkn_ token found in any field.`);
+              fastify.log.warn(`⚠️ Checked fields: authentication_token, droplet_installation.authentication_token, etc.`);
+              fastify.log.warn(`⚠️ Available tokens: ${possibleTokenFields.filter(Boolean).join(', ')}`);
+
+              // Maybe we need to make an additional API call to get the company token
+              // Let's try calling the company API to see if we can get it
+              try {
+                fastify.log.info(`🔍 Trying to get company token via company API...`);
+                const companyResponse = await fetch(`https://${subdomain}.fluid.app/api/company/v1/auth/token`, {
+                  method: 'GET',
+                  headers: {
+                    'Authorization': `Bearer ${company.authentication_token}`,
+                    'Content-Type': 'application/json'
+                  }
+                });
+
+                if (companyResponse.ok) {
+                  const companyData = await companyResponse.json();
+                  fastify.log.info(`📋 Company API response: ${JSON.stringify(companyData, null, 2)}`);
+
+                  if (companyData.token && companyData.token.startsWith('cdrtkn_')) {
+                    companyApiToken = companyData.token;
+                    fastify.log.info(`✅ Got company token from company API: ${companyApiToken.substring(0, 10)}...`);
+                  }
+                } else {
+                  fastify.log.warn(`❌ Company API failed: ${companyResponse.status} ${companyResponse.statusText}`);
+                }
+              } catch (err) {
+                fastify.log.warn(`❌ Error calling company API: ${err}`);
+              }
             }
           } else {
             fastify.log.warn(`⚠️ All installation API endpoints failed. Using fallback dit_ token.`);
