@@ -82,7 +82,24 @@ export function DropletDashboard() {
           console.log('📡 Making API call to:', apiUrl)
           const response = await apiClient.get(apiUrl)
           console.log('✅ Basic dashboard response:', response.data)
-          setDashboardData(response.data.data)
+          const dashboardData = response.data.data
+          setDashboardData(dashboardData)
+          
+          // Try to fetch brand guidelines using the authentication token from the response
+          if (dashboardData.authenticationToken) {
+            console.log('🔍 Trying to fetch brand guidelines with authentication token:', dashboardData.authenticationToken.substring(0, 10) + '...')
+            try {
+              const brandData = await fetchBrandGuidelines(installationId, dashboardData.authenticationToken)
+              if (brandData) {
+                console.log('✅ Brand guidelines fetched successfully with auth token')
+                dashboardData.brandGuidelines = brandData
+                setDashboardData({...dashboardData})
+              }
+            } catch (err) {
+              console.error('❌ Failed to fetch brand guidelines with auth token:', err)
+            }
+          }
+          
           setIsLoading(false)
           return
         } catch (err: any) {
