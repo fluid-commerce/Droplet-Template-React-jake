@@ -100,7 +100,7 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
   const [isTabLoading, setIsTabLoading] = useState(false)
-  const [orderItemImages, setOrderItemImages] = useState<Record<string, string>>({})
+  const [orderItemImages, setOrderItemImages] = useState<Record<string, string | null>>({})
   const itemsPerPage = 10
 
   // Helper function to format colors
@@ -181,7 +181,7 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
     // Fetch images for order items if not already fetched
     const itemsNeedingImages = items.filter(item => {
       const productId = item.product_id || item.id || item.sku
-      return productId && !orderItemImages[productId]
+      return productId && !Object.prototype.hasOwnProperty.call(orderItemImages, productId)
     })
     
     if (itemsNeedingImages.length > 0) {
@@ -433,27 +433,28 @@ export function ProductsSection({ installationId, brandGuidelines }: ProductsSec
   const fetchOrderItemImages = async (orderItems: any[]) => {
     // Limit to first 5 items to prevent resource exhaustion
     const limitedItems = orderItems.slice(0, 5)
-    
-    const imageMap: Record<string, string> = {}
-    
+
+    const imageMap: Record<string, string | null> = {}
+
     // Process items sequentially with delay to prevent overwhelming the server
     for (const item of limitedItems) {
       const productId = item.product_id || item.id || item.sku
       if (!productId) continue
 
+      // Skip if we've already attempted (cached even if null)
+      if (Object.prototype.hasOwnProperty.call(orderItemImages, productId)) continue
+
       try {
-        console.log(`🔄 Fetching image for product ${productId}...`)
         const response = await apiClient.get(`/api/products/${installationId}/image/${productId}`)
-        if (response.data.success && response.data.imageUrl) {
-          imageMap[productId] = response.data.imageUrl
-          console.log(`✅ Got image for product ${productId}:`, response.data.imageUrl)
+        if (response.data && response.data.success) {
+          imageMap[productId] = response.data.imageUrl || null
         } else {
-          console.log(`⚠️ No image found for product ${productId}`)
+          imageMap[productId] = null
         }
       } catch (error) {
-        console.log(`❌ Failed to fetch image for product ${productId}:`, error)
+        imageMap[productId] = null
       }
-      
+
       // Add small delay between requests
       await new Promise(resolve => setTimeout(resolve, 100))
     }
