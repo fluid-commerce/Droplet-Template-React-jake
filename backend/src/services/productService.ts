@@ -277,11 +277,24 @@ export class ProductService {
    * Get products from our database for an installation
    */
   static async getProductsForInstallation(installationId: string) {
-    return await prisma.$queryRaw`
+    const products = await prisma.$queryRaw`
       SELECT * FROM products 
       WHERE "installationId" = ${installationId}
       ORDER BY "updatedAt" DESC
     `
+    
+    // Debug: Log first few products to check imageUrl in database
+    if (Array.isArray(products) && products.length > 0) {
+      console.log('🔍 Backend: First product from database:', products[0])
+      console.log('🔍 Backend: First product imageUrl:', (products[0] as any).imageUrl)
+      
+      // Check first 3 products for image URLs
+      products.slice(0, 3).forEach((product: any, index: number) => {
+        console.log(`🔍 Backend: Product ${index + 1} (ID: ${product.fluidProductId}) imageUrl:`, product.imageUrl)
+      })
+    }
+    
+    return products
   }
 
   /**
