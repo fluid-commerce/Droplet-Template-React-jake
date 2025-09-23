@@ -7,7 +7,7 @@
  * Use this to fix droplets that were created without webhook URLs.
  * 
  * Usage:
- *   FLUID_API_KEY=your_key DROPLET_ID=your_droplet_id WEBHOOK_URL=https://your-backend.com/api/webhooks/fluid node scripts/update-droplet.js
+ *   FLUID_API_KEY=your_key DROPLET_ID=your_droplet_id WEBHOOK_URL=https://your-backend.com/api/webhook/fluid node scripts/update-droplet.js
  */
 
 import axios from 'axios'

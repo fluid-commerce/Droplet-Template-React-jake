@@ -310,7 +310,8 @@ fastify.get('/api/droplet/auth-token/:installationId', async (request, reply) =>
         companyName: installData.companyName,
         logoUrl: installData.logoUrl,
         installationId: installData.fluidId,
-        authenticationToken: installData.authenticationToken // Include the cdrtkn_ token
+        authenticationToken: installData.authenticationToken, // Include the cdrtkn_ token
+        fluidShop: installData.fluidShop // Include the company's Fluid shop domain
       }
     };
 
@@ -355,27 +356,54 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
         const subdomain = company.fluid_shop ? company.fluid_shop.replace('.fluid.app', '') : null;
 
         if (subdomain) {
-          const installationResponse = await fetch(
+          // Try different possible API endpoints for getting installation details
+          const possibleEndpoints = [
             `https://${subdomain}.fluid.app/api/droplet_installations/${company.droplet_installation_uuid}`,
-            {
-              method: 'GET',
-              headers: {
-                'Authorization': `Bearer ${company.authentication_token}`,
-                'Content-Type': 'application/json'
-              }
-            }
-          );
+            `https://${subdomain}.fluid.app/api/company/v1/droplet_installations/${company.droplet_installation_uuid}`,
+            `https://api.fluid.app/api/droplet_installations/${company.droplet_installation_uuid}`,
+            `https://fluid.app/api/droplet_installations/${company.droplet_installation_uuid}`
+          ];
 
-          if (installationResponse.ok) {
+          let installationResponse = null;
+          let usedEndpoint = '';
+
+          for (const endpoint of possibleEndpoints) {
+            try {
+              fastify.log.info(`🔍 Trying endpoint: ${endpoint}`);
+              installationResponse = await fetch(endpoint, {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${company.authentication_token}`,
+                  'Content-Type': 'application/json'
+                }
+              });
+
+              if (installationResponse.ok) {
+                usedEndpoint = endpoint;
+                fastify.log.info(`✅ Success with endpoint: ${endpoint}`);
+                break;
+              } else {
+                fastify.log.warn(`❌ Failed with ${endpoint}: ${installationResponse.status} ${installationResponse.statusText}`);
+              }
+            } catch (err) {
+              fastify.log.warn(`❌ Error with ${endpoint}: ${err}`);
+            }
+          }
+
+          if (installationResponse && installationResponse.ok) {
             const installationData = await installationResponse.json();
+            fastify.log.info(`📋 Installation API response from ${usedEndpoint}:`);
+            fastify.log.info(JSON.stringify(installationData, null, 2));
+
             if (installationData.authentication_token && installationData.authentication_token.startsWith('cdrtkn_')) {
               companyApiToken = installationData.authentication_token;
               fastify.log.info(`✅ Got company API token: ${companyApiToken.substring(0, 10)}...`);
             } else {
-              fastify.log.warn(`⚠️ No cdrtkn_ token found in installation response`);
+              fastify.log.warn(`⚠️ No cdrtkn_ token found. Got token: ${installationData.authentication_token || 'none'}`);
+              fastify.log.warn(`⚠️ Full installation response: ${JSON.stringify(installationData, null, 2)}`);
             }
           } else {
-            fastify.log.warn(`⚠️ Failed to fetch installation details: ${installationResponse.status}`);
+            fastify.log.warn(`⚠️ All installation API endpoints failed. Using fallback dit_ token.`);
           }
         }
       } catch (error) {
@@ -394,7 +422,7 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
         RETURNING id, "fluidId", "isActive", "authenticationToken"
       ` as any[];
 
-      const installData = installation[0];
+      fastify.log.info(`✅ Installation created/updated: ${installation[0].fluidId}`);
 
     }
 
@@ -404,12 +432,14 @@ fastify.post('/api/webhook/fluid', async (request, reply) => {
       
       
       // Deactivate the installation using the correct database schema
-      const result = await prisma.$queryRaw`
-        UPDATE installations 
+      await prisma.$queryRaw`
+        UPDATE installations
         SET "isActive" = false, "updatedAt" = NOW()
         WHERE "fluidId" = ${company.droplet_installation_uuid}
         RETURNING "fluidId"
-      ` as any[];
+      `;
+
+      fastify.log.info(`✅ Installation deactivated: ${company.droplet_installation_uuid}`);
 
     }
 

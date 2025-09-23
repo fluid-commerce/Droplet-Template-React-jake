@@ -109,8 +109,8 @@ function validateConfiguration(config) {
         logWarning('Webhook URL should use HTTPS for production deployments')
       }
       // Ensure it ends with the correct path
-      if (!config.webhookUrl.endsWith('/api/webhooks/fluid')) {
-        logWarning('Webhook URL should end with "/api/webhooks/fluid"')
+      if (!config.webhookUrl.endsWith('/api/webhook/fluid')) {
+        logWarning('Webhook URL should end with "/api/webhook/fluid"')
       }
     } catch (error) {
       errors.push('WEBHOOK_URL must be a valid URL')
@@ -271,12 +271,12 @@ async function main() {
       validationErrors.forEach(error => logError(`  • ${error}`))
       console.log()
       logInfo('Usage:')
-      logInfo('  FLUID_API_KEY=your_key EMBED_URL=https://your-frontend.com/ WEBHOOK_URL=https://your-backend.com/api/webhooks/fluid node scripts/create-droplet.js')
+      logInfo('  FLUID_API_KEY=your_key EMBED_URL=https://your-frontend.com/ WEBHOOK_URL=https://your-backend.com/api/webhook/fluid node scripts/create-droplet.js')
       console.log()
       logInfo('Required environment variables:')
       logInfo('  FLUID_API_KEY=your_fluid_api_key')
       logInfo('  EMBED_URL=https://your-frontend.com/')
-      logInfo('  WEBHOOK_URL=https://your-backend.com/api/webhooks/fluid')
+      logInfo('  WEBHOOK_URL=https://your-backend.com/api/webhook/fluid')
       console.log()
       logInfo('Optional environment variables:')
       logInfo('  DROPLET_NAME="My Droplet"')
