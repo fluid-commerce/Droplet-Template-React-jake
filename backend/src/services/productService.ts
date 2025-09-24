@@ -53,20 +53,20 @@ export class ProductService {
   ): Promise<FluidProductsResponse> {
     const queryParams = new URLSearchParams({
       page: page.toString(),
-      per_page: perPage.toString(),
-      status: 'active' // Only fetch active products
+      per_page: perPage.toString()
+      // Removed status: 'active' filter to allow all products including drafts
     })
 
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
 
     try {
-      // Use working API endpoints (tested with dit_ tokens)
-      // dit_ tokens work with /api/v1/products (not /api/company/v1/products)
+      // Try company endpoint first (works with both dit_ and PT tokens)
+      // Then fallback to v1 endpoints if company endpoint fails
       const possibleEndpoints = [
-        `https://${companyShop}.fluid.app/api/v1/products?${queryParams}`, // Working: company subdomain
-        `https://fluid.app/api/v1/products?company=${companyShop}&${queryParams}`, // Working: global API
-        `https://${companyShop}.fluid.app/api/company/v1/products?${queryParams}`, // Fallback: original
+        `https://${companyShop}.fluid.app/api/company/v1/products?${queryParams}`, // Company endpoint (works with dit_ and PT)
+        `https://${companyShop}.fluid.app/api/v1/products?${queryParams}`, // Subdomain v1
+        `https://fluid.app/api/v1/products?company=${companyShop}&${queryParams}`, // Global API
         `https://api.fluid.app/api/v1/products?company=${companyShop}&${queryParams}` // Fallback: global v1
       ];
 
