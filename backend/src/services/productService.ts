@@ -213,13 +213,18 @@ export class ProductService {
             }
             
 
+            // Strip HTML from description
+            const cleanDescription = fluidProduct.description 
+              ? fluidProduct.description.replace(/<[^>]*>/g, '') 
+              : null
+
             await prisma.$executeRaw`
               INSERT INTO products (
                 id, "installationId", "fluidProductId", title, sku, description, 
                 "imageUrl", status, price, "inStock", public, "createdAt", "updatedAt"
               ) VALUES (
                 gen_random_uuid(), ${installationId}, ${fluidProduct.id.toString()}, 
-                ${fluidProduct.title}, ${fluidProduct.sku || null}, ${fluidProduct.description || null},
+                ${fluidProduct.title}, ${fluidProduct.sku || null}, ${cleanDescription},
                 ${imageUrl}, ${fluidProduct.status || null}, 
                 ${fluidProduct.price || null}, ${fluidProduct.in_stock ?? true}, 
                 ${fluidProduct.public ?? true}, NOW(), NOW()

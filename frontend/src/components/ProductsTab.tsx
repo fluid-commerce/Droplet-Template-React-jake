@@ -269,7 +269,7 @@ export function ProductsTab({ installationId, brandGuidelines, onSyncMessage }: 
                           </div>
                           {product.description && (
                             <div className="text-sm text-gray-500 truncate">
-                              {product.description}
+                              {product.description.replace(/<[^>]*>/g, '')}
                             </div>
                           )}
                         </div>
