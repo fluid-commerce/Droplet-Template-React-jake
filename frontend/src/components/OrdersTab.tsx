@@ -51,6 +51,7 @@ interface OrdersTabProps {
 
 export function OrdersTab({ installationId, brandGuidelines, onSyncMessage }: OrdersTabProps) {
   const [orders, setOrders] = useState<Order[]>([])
+  const [products, setProducts] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncingOrders, setIsSyncingOrders] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -62,6 +63,26 @@ export function OrdersTab({ installationId, brandGuidelines, onSyncMessage }: Or
   const formatColor = (color: string | null | undefined) => {
     if (!color) return undefined
     return color.startsWith('#') ? color : `#${color}`
+  }
+
+  // Fetch products to get images for order items
+  const fetchProducts = async () => {
+    try {
+      const response = await apiClient.get(`/api/products/${installationId}`)
+      if (response.data.success) {
+        setProducts(response.data.data.products)
+      }
+    } catch (err) {
+      console.error('Error fetching products:', err)
+    }
+  }
+
+  // Helper function to find product image by title match
+  const getProductImage = (itemTitle: string) => {
+    const product = products.find(p => 
+      p.title.toLowerCase().trim() === itemTitle.toLowerCase().trim()
+    )
+    return product?.imageUrl || null
   }
 
   // Fetch orders from our database
@@ -128,6 +149,7 @@ export function OrdersTab({ installationId, brandGuidelines, onSyncMessage }: Or
   useEffect(() => {
     if (installationId) {
       fetchOrders()
+      fetchProducts()
     }
   }, [installationId])
 
@@ -280,27 +302,49 @@ export function OrdersTab({ installationId, brandGuidelines, onSyncMessage }: Or
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {order.orderData?.items ? (
-                        <div className="space-y-1">
-                          {order.orderData.items.slice(0, 3).map((item: any, index: number) => (
-                            <div key={index} className="flex items-center space-x-2">
-                              <div className="flex-shrink-0 h-5 w-5 rounded bg-gray-100 flex items-center justify-center">
-                                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                </svg>
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="text-xs text-gray-900 truncate">
-                                  {item.title || 'Unknown Product'}
+                        <div className="space-y-2">
+                          {order.orderData.items.slice(0, 2).map((item: any, index: number) => {
+                            const productImage = getProductImage(item.title)
+                            return (
+                              <div key={index} className="flex items-center space-x-2">
+                                <div className="flex-shrink-0 h-6 w-6">
+                                  {productImage ? (
+                                    <img
+                                      className="h-6 w-6 rounded object-cover"
+                                      src={productImage}
+                                      alt={item.title || 'Product'}
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none'
+                                        const nextElement = e.currentTarget.nextElementSibling as HTMLElement
+                                        if (nextElement) {
+                                          nextElement.style.display = 'flex'
+                                        }
+                                      }}
+                                    />
+                                  ) : null}
+                                  <div
+                                    className="h-6 w-6 rounded bg-gray-100 flex items-center justify-center"
+                                    style={{ display: productImage ? 'none' : 'flex' }}
+                                  >
+                                    <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
+                                  </div>
                                 </div>
-                                <div className="text-xs text-gray-500">
-                                  {item.price_in_currency} {item.quantity > 1 && `× ${item.quantity}`}
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-xs text-gray-900 truncate">
+                                    {item.title || 'Unknown Product'}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {item.price_in_currency} {item.quantity > 1 && `× ${item.quantity}`}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
-                          {order.orderData.items.length > 3 && (
-                            <div className="text-xs text-gray-400 pl-7">
-                              +{order.orderData.items.length - 3} more items
+                            )
+                          })}
+                          {order.orderData.items.length > 2 && (
+                            <div className="text-xs text-gray-400 pl-8">
+                              +{order.orderData.items.length - 2} more items
                             </div>
                           )}
                         </div>
