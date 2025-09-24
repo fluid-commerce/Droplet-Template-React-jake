@@ -280,48 +280,27 @@ export function OrdersTab({ installationId, brandGuidelines, onSyncMessage }: Or
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {order.orderData?.items ? (
-                        <div className="space-y-2">
-                          {order.orderData.items.slice(0, 2).map((item: any, index: number) => (
+                        <div className="space-y-1">
+                          {order.orderData.items.slice(0, 3).map((item: any, index: number) => (
                             <div key={index} className="flex items-center space-x-2">
-                              <div className="flex-shrink-0 h-6 w-6">
-                                {item.product?.image_url || item.image_url ? (
-                                  <img
-                                    className="h-6 w-6 rounded object-cover"
-                                    src={item.product?.image_url || item.image_url}
-                                    alt={item.product?.title || item.title || 'Product'}
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = 'none'
-                                      const nextElement = e.currentTarget.nextElementSibling as HTMLElement
-                                      if (nextElement) {
-                                        nextElement.style.display = 'flex'
-                                      }
-                                    }}
-                                  />
-                                ) : null}
-                                <div
-                                  className="h-6 w-6 rounded bg-gray-200 flex items-center justify-center"
-                                  style={{ display: (item.product?.image_url || item.image_url) ? 'none' : 'flex' }}
-                                >
-                                  <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
-                                </div>
+                              <div className="flex-shrink-0 h-5 w-5 rounded bg-gray-100 flex items-center justify-center">
+                                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                </svg>
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="text-xs text-gray-900 truncate">
-                                  {item.product?.title || item.title || 'Unknown Product'}
+                                  {item.title || 'Unknown Product'}
                                 </div>
-                                {item.quantity > 1 && (
-                                  <div className="text-xs text-gray-500">
-                                    Qty: {item.quantity}
-                                  </div>
-                                )}
+                                <div className="text-xs text-gray-500">
+                                  {item.price_in_currency} {item.quantity > 1 && `× ${item.quantity}`}
+                                </div>
                               </div>
                             </div>
                           ))}
-                          {order.orderData.items.length > 2 && (
-                            <div className="text-xs text-gray-400 pl-8">
-                              +{order.orderData.items.length - 2} more items
+                          {order.orderData.items.length > 3 && (
+                            <div className="text-xs text-gray-400 pl-7">
+                              +{order.orderData.items.length - 3} more items
                             </div>
                           )}
                         </div>
