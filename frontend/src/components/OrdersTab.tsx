@@ -279,7 +279,25 @@ export function OrdersTab({ installationId, brandGuidelines, onSyncMessage }: Or
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.itemsCount ? `${order.itemsCount} items` : '—'}
+                      {order.orderData?.items ? (
+                        <div className="space-y-1">
+                          {order.orderData.items.slice(0, 2).map((item: any, index: number) => (
+                            <div key={index} className="text-xs">
+                              {item.product?.title || item.title || 'Unknown Product'}
+                              {item.quantity > 1 && ` (×${item.quantity})`}
+                            </div>
+                          ))}
+                          {order.orderData.items.length > 2 && (
+                            <div className="text-xs text-gray-400">
+                              +{order.orderData.items.length - 2} more
+                            </div>
+                          )}
+                        </div>
+                      ) : order.itemsCount ? (
+                        `${order.itemsCount} items`
+                      ) : (
+                        '—'
+                      )}
                     </td>
                   </tr>
                 ))}
