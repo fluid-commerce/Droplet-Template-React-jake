@@ -110,3 +110,4 @@ temp/
 ehthumbs.db
 Thumbs.db
 .env.dev
+DEPLOYMENT-INFO.md

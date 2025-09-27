@@ -13,8 +13,8 @@ COPY package*.json ./
 # Copy Prisma schema first (needed for postinstall script)
 COPY prisma ./prisma/
 
-# Install dependencies (this will run prisma generate via postinstall)
-RUN npm ci --only=production
+# Install all dependencies (needed for TypeScript build)
+RUN npm ci
 
 # Copy source code and build
 COPY . .

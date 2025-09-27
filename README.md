@@ -39,17 +39,36 @@ This droplet uses **DIT (Droplet Installation Token)** authentication, which mea
 
 ## Quick Start
 
+### 🐳 Docker Development (Recommended)
+
+1. **Start with Docker:**
+```bash
+# Copy environment template
+cp env.dev.example .env.dev
+# Edit .env.dev with your Fluid credentials
+
+# Start development environment
+./scripts/dev-start.sh
+# OR
+npm run docker:dev
+```
+
+**Access Points:**
+- Frontend: http://localhost:5173
+- Backend: http://localhost:3001
+- Database Admin: http://localhost:8080
+
+### 📦 Traditional Setup
+
 1. **Install dependencies:**
 ```bash
 npm install
 cd frontend && npm install
 cd ../backend && npm install
-cd ../database && npm install
 ```
 
 2. **Set up database:**
 ```bash
-# Database is already configured for local development
 npm run prisma:push
 ```
 
@@ -58,11 +77,23 @@ npm run prisma:push
 npm run dev
 ```
 
-This starts:
-- Frontend: http://localhost:5173
-- Backend: http://localhost:3001
+## Deployment Options
 
-## Creating Your Droplet
+### 🌐 Google Cloud Platform (Recommended)
+
+**Quick Deploy to GCP:**
+```bash
+# 1. Set up secrets and database
+./gcp/setup-secrets.sh
+./gcp/setup-database.sh
+
+# 2. Deploy to Cloud Run
+./gcp/deploy.sh
+```
+
+See [`GCP-DEPLOYMENT.md`](GCP-DEPLOYMENT.md) for complete guide.
+
+### 🚀 Other Platforms
 
 1. **Deploy to production** (Render, Vercel, etc.)
 2. **Get your Fluid API key** from your Fluid account
@@ -83,10 +114,25 @@ node scripts/create-droplet.js
 
 ## Available Scripts
 
-- `npm run dev` - Start both frontend and backend
+### Development
+- `npm run dev` - Start both frontend and backend (traditional)
+- `npm run docker:dev` - Start Docker development environment
+- `npm run docker:logs` - View Docker logs
+
+### Docker Management
+- `npm run docker:dev:up` - Start Docker development containers
+- `npm run docker:dev:down` - Stop Docker development containers
+- `npm run docker:prod:up` - Start Docker production containers
+- `npm run docker:prod:down` - Stop Docker production containers
+
+### Database
 - `npm run prisma:generate` - Generate Prisma client
 - `npm run prisma:push` - Push schema to database
 - `npm run prisma:studio` - Open Prisma Studio
+
+### Deployment
+- `npm run docker:prod` - Deploy to production (Docker)
+- `npm run docker:backup` - Backup database
 
 ## Customizing
 
@@ -96,6 +142,12 @@ This template is intentionally simple. To add features:
 3. Add UI components in `frontend/src/components/`
 
 The code is clean and organized - easy to understand and modify!
+
+## 📋 Documentation
+
+- **[DEPLOYMENT-INFO.md](DEPLOYMENT-INFO.md)** - Current deployment details and URLs
+- **[DOCKER.md](DOCKER.md)** - Docker development and deployment guide  
+- **[GCP-DEPLOYMENT.md](GCP-DEPLOYMENT.md)** - Complete Google Cloud Platform guide
 
 
 # 🚀 How to Build Your Own Fluid Droplet
