@@ -1,0 +1,95 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: droplet-postgres-prod
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-droplet_prod}
+      POSTGRES_USER: ${POSTGRES_USER:-droplet_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-droplet_user} -d ${POSTGRES_DB:-droplet_prod}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - droplet-network
+
+  # Backend API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: droplet-backend-prod
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-droplet_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-droplet_prod}
+      # Fluid Configuration
+      FLUID_API_KEY: ${FLUID_API_KEY}
+      FLUID_API_URL: https://api.fluid.app
+      FLUID_WEBHOOK_SECRET: ${FLUID_WEBHOOK_SECRET}
+      DROPLET_ID: ${DROPLET_ID}
+      # CORS Configuration
+      FRONTEND_URL: ${FRONTEND_URL}
+      WEBHOOK_BASE_URL: ${WEBHOOK_BASE_URL}
+      # Security
+      JWT_SECRET: ${JWT_SECRET}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - droplet-network
+
+  # Frontend Static Files (served by Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_FLUID_API_URL: ${VITE_FLUID_API_URL}
+        VITE_FLUID_ENVIRONMENT: production
+        VITE_APP_NAME: ${VITE_APP_NAME:-Fluid Droplet}
+    container_name: droplet-frontend-prod
+    restart: unless-stopped
+    networks:
+      - droplet-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: droplet-nginx-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    networks:
+      - droplet-network
+
+volumes:
+  postgres_data:
+  nginx_logs:
+
+networks:
+  droplet-network:
+    driver: bridge

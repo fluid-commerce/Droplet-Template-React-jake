@@ -1,0 +1,103 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: droplet-postgres-dev
+    environment:
+      POSTGRES_DB: droplet_dev
+      POSTGRES_USER: droplet_user
+      POSTGRES_PASSWORD: droplet_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/prisma/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U droplet_user -d droplet_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: droplet-backend-dev
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgresql://droplet_user:droplet_password@postgres:5432/droplet_dev
+      # Fluid Configuration (set these in .env.dev file)
+      FLUID_API_KEY: ${FLUID_API_KEY:-}
+      FLUID_API_URL: https://api.fluid.app
+      FLUID_WEBHOOK_SECRET: ${FLUID_WEBHOOK_SECRET:-}
+      DROPLET_ID: ${DROPLET_ID:-}
+      # CORS Configuration
+      FRONTEND_URL: http://localhost:5173
+      # Security
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
+      LOG_LEVEL: debug
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+      - ./backend/package.json:/app/package.json
+      - ./backend/tsconfig.json:/app/tsconfig.json
+      - backend_node_modules:/app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: droplet-frontend-dev
+    environment:
+      VITE_API_BASE_URL: http://localhost:3001
+      VITE_FLUID_API_URL: http://localhost:3001
+      VITE_FLUID_ENVIRONMENT: development
+      VITE_APP_NAME: ${VITE_APP_NAME:-Fluid Droplet Dev}
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/package.json:/app/package.json
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+      - ./frontend/tailwind.config.js:/app/tailwind.config.js
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      - backend
+    command: npm run dev -- --host 0.0.0.0
+
+  # Database Administration UI (optional)
+  adminer:
+    image: adminer:4.8.1
+    container_name: droplet-adminer-dev
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+  backend_node_modules:
+  frontend_node_modules:
+
+networks:
+  default:
+    name: droplet-dev-network

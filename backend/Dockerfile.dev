@@ -1,0 +1,25 @@
+FROM node:20-alpine
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Copy Prisma schema first (needed for postinstall script)
+COPY prisma ./prisma/
+
+# Install dependencies (this will run prisma generate via postinstall)
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Expose port
+EXPOSE 3001
+
+# Development command (will be overridden by docker-compose)
+CMD ["npm", "run", "dev"]

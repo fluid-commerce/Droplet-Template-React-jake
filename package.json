@@ -7,7 +7,15 @@
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "cd backend && npm run dev",
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "build": "npm run build:frontend"
+    "build": "npm run build:frontend",
+    "docker:dev": "./scripts/dev-start.sh",
+    "docker:prod": "./scripts/prod-deploy.sh",
+    "docker:logs": "./scripts/logs.sh",
+    "docker:backup": "./scripts/backup-db.sh",
+    "docker:dev:up": "docker-compose -f docker-compose.dev.yml up -d",
+    "docker:dev:down": "docker-compose -f docker-compose.dev.yml down",
+    "docker:prod:up": "docker-compose -f docker-compose.prod.yml up -d",
+    "docker:prod:down": "docker-compose -f docker-compose.prod.yml down"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
