@@ -18,6 +18,8 @@ export function createFastifyInstance() {
     'https://*.fluid.app',
     'https://droplet-frontend-go5d.onrender.com',
     'https://droplet-backend-go5d.onrender.com',
+    'https://fluid-droplet-jake-frontend-prod-3h47nfle6q-uc.a.run.app',
+    'https://*.run.app',
     process.env.FRONTEND_URL
   ].filter(Boolean);
 

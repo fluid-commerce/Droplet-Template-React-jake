@@ -23,8 +23,8 @@ export function DropletDashboard() {
   const [searchParams] = useSearchParams()
   const installationId = searchParams.get('installation_id') || searchParams.get('dri')
   const fluidApiKey = searchParams.get('fluid_api_key')
-  
-  
+
+
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [brandGuidelines, setBrandGuidelines] = useState<BrandGuidelines | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -54,14 +54,14 @@ export function DropletDashboard() {
 
   useEffect(() => {
     const loadDashboardData = async () => {
-      
+
       // Check if we're missing both parameters - this indicates we're not in a proper Fluid embed
       if (!installationId && !fluidApiKey) {
         setError('This droplet must be accessed through the Fluid platform. Please install it from the Fluid marketplace.')
         setIsLoading(false)
         return
       }
-      
+
       if (!installationId) {
         setError('Missing installation ID. Please try reinstalling the droplet from the Fluid marketplace.')
         setIsLoading(false)
@@ -75,20 +75,20 @@ export function DropletDashboard() {
           const response = await apiClient.get(apiUrl)
           const dashboardData = response.data.data
           setDashboardData(dashboardData)
-          
+
           // Try to fetch brand guidelines using the authentication token from the response
           if (dashboardData.authenticationToken) {
             try {
               const brandData = await fetchBrandGuidelines(installationId, dashboardData.authenticationToken)
               if (brandData) {
                 dashboardData.brandGuidelines = brandData
-                setDashboardData({...dashboardData})
+                setDashboardData({ ...dashboardData })
               }
             } catch (err) {
               // Silently fail - brand guidelines are optional
             }
           }
-          
+
           setIsLoading(false)
           return
         } catch (err: any) {
@@ -110,12 +110,12 @@ export function DropletDashboard() {
         ])
 
         const dashboardData = dashboardResponse.data.data
-        
+
         // If we have brand guidelines, merge them into dashboard data
         if (brandData) {
           dashboardData.brandGuidelines = brandData
         }
-        
+
         setDashboardData(dashboardData)
       } catch (err: any) {
         // If installation not found (404) or forbidden (403), it was likely uninstalled
@@ -126,12 +126,12 @@ export function DropletDashboard() {
               localStorage.removeItem(key)
             }
           })
-          
+
           // Redirect to installation flow
           window.location.href = '/'
           return
         }
-        
+
         setError(err.response?.data?.message || 'Failed to load dashboard data')
       } finally {
         setIsLoading(false)
@@ -160,10 +160,10 @@ export function DropletDashboard() {
   }
 
   if (error) {
-    const isAccessError = error.includes('This droplet must be accessed through the Fluid platform') || 
-                         error.includes('Missing installation ID') || 
-                         error.includes('Missing Fluid API key')
-    
+    const isAccessError = error.includes('This droplet must be accessed through the Fluid platform') ||
+      error.includes('Missing installation ID') ||
+      error.includes('Missing Fluid API key')
+
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8 text-center">
@@ -174,7 +174,7 @@ export function DropletDashboard() {
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-3">Connection Error</h2>
           <p className="text-gray-600 mb-6 text-base">{error}</p>
-          
+
           {isAccessError && (
             <div className="bg-blue-50 rounded-lg p-6 mb-6 text-left">
               <h3 className="text-base font-medium text-blue-900 mb-3">How to fix this:</h3>
@@ -185,9 +185,9 @@ export function DropletDashboard() {
               </ul>
             </div>
           )}
-          
-          <button 
-            onClick={() => window.location.reload()} 
+
+          <button
+            onClick={() => window.location.reload()}
             className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors text-base font-medium"
           >
             Try Again
@@ -203,10 +203,10 @@ export function DropletDashboard() {
         {/* Single Card with Everything */}
         <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
           {/* Header with Company Branding */}
-          <div 
+          <div
             className="p-6 sm:p-8"
             style={{
-              background: dashboardData?.brandGuidelines?.color 
+              background: dashboardData?.brandGuidelines?.color
                 ? `linear-gradient(135deg, ${formatColor(dashboardData.brandGuidelines.color)}, ${formatColor(dashboardData.brandGuidelines.secondary_color || dashboardData.brandGuidelines.color)}dd)`
                 : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
             }}
@@ -215,58 +215,58 @@ export function DropletDashboard() {
               {/* Company Logo */}
               {(dashboardData?.brandGuidelines?.logo_url || dashboardData?.logoUrl) && (
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl p-3 sm:p-4 shadow-2xl bg-white/95 flex items-center justify-center flex-shrink-0">
-                  <img 
-                    src={dashboardData.brandGuidelines?.logo_url || dashboardData.logoUrl} 
+                  <img
+                    src={dashboardData.brandGuidelines?.logo_url || dashboardData.logoUrl}
                     alt={`${dashboardData.brandGuidelines?.name || dashboardData.companyName} logo`}
-                  className="w-full h-full object-contain"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none'
-                  }}
-                />
-              </div>
-            )}
-              
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                </div>
+              )}
+
               {/* Company Info */}
               <div className="text-center sm:text-left flex-1">
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
                   {dashboardData?.brandGuidelines?.name || dashboardData?.companyName}
-              </h1>
+                </h1>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
           {/* Main Content */}
           <div className="p-6 sm:p-8">
             {/* Success Message */}
             <div className="text-center mb-6">
-              <div 
+              <div
                 className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
                 style={{
-                  backgroundColor: dashboardData?.brandGuidelines?.color 
-                    ? `${formatColor(dashboardData.brandGuidelines.color)}20` 
+                  backgroundColor: dashboardData?.brandGuidelines?.color
+                    ? `${formatColor(dashboardData.brandGuidelines.color)}20`
                     : '#10b98120'
                 }}
               >
-                <svg 
-                  className="w-8 h-8" 
-                  fill="none" 
-                  stroke="currentColor" 
+                <svg
+                  className="w-8 h-8"
+                  fill="none"
+                  stroke="currentColor"
                   viewBox="0 0 24 24"
                   style={{
-                    color: dashboardData?.brandGuidelines?.color 
+                    color: dashboardData?.brandGuidelines?.color
                       ? formatColor(dashboardData.brandGuidelines.color)
                       : '#10b981'
                   }}
                 >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
-              Installation Successful!
-            </h2>
+                Installation Successful! Testing
+              </h2>
               <p className="text-gray-600 text-sm sm:text-base">
-              Your Fluid droplet is now active and ready to use.
-            </p>
+                Your Fluid droplet is now active and ready to use.
+              </p>
             </div>
 
             {/* Build Your Own Droplet - Collapsible */}
@@ -274,16 +274,16 @@ export function DropletDashboard() {
               <details className="group">
                 <summary className="flex items-center justify-between p-4 sm:p-6 cursor-pointer hover:bg-gray-100 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div 
+                    <div
                       className="w-8 h-8 rounded-lg flex items-center justify-center"
                       style={{
-                        backgroundColor: dashboardData?.brandGuidelines?.color 
+                        backgroundColor: dashboardData?.brandGuidelines?.color
                           ? `${formatColor(dashboardData.brandGuidelines.color)}20`
                           : '#10b98120'
                       }}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{
-                        color: dashboardData?.brandGuidelines?.color 
+                        color: dashboardData?.brandGuidelines?.color
                           ? formatColor(dashboardData.brandGuidelines.color)
                           : '#10b981'
                       }}>
@@ -299,20 +299,20 @@ export function DropletDashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </summary>
-                
+
                 <div className="px-4 sm:px-6 pb-4 sm:pb-6">
                   <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 space-y-4">
                     <div>
                       <p className="text-sm text-gray-700 leading-relaxed mb-4">
-                        Create powerful integrations that connect any service to the Fluid platform. 
+                        Create powerful integrations that connect any service to the Fluid platform.
                         Build custom droplets that all Fluid users can install and use.
                       </p>
-                      
+
                       <div className="grid md:grid-cols-2 gap-4 mb-4">
                         <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                           <h4 className="font-semibold text-gray-900 mb-2 flex items-center text-sm">
                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{
-                              color: dashboardData?.brandGuidelines?.color 
+                              color: dashboardData?.brandGuidelines?.color
                                 ? formatColor(dashboardData.brandGuidelines.color)
                                 : '#6b7280'
                             }}>
@@ -321,15 +321,15 @@ export function DropletDashboard() {
                             Connect Anything
                           </h4>
                           <p className="text-xs text-gray-600 leading-relaxed">
-                            Connect Shopify, Stripe, email marketing tools, CRMs, or any API. 
+                            Connect Shopify, Stripe, email marketing tools, CRMs, or any API.
                             Your droplet can sync data, send notifications, or automate workflows.
                           </p>
                         </div>
-                        
+
                         <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                           <h4 className="font-semibold text-gray-900 mb-2 flex items-center text-sm">
                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{
-                              color: dashboardData?.brandGuidelines?.color 
+                              color: dashboardData?.brandGuidelines?.color
                                 ? formatColor(dashboardData.brandGuidelines.color)
                                 : '#6b7280'
                             }}>
@@ -338,16 +338,16 @@ export function DropletDashboard() {
                             Multi-Tenant Security
                           </h4>
                           <p className="text-xs text-gray-600 leading-relaxed">
-                            Each company's data is completely isolated and encrypted. 
+                            Each company's data is completely isolated and encrypted.
                             Your droplet automatically handles security, authentication, and data protection.
                           </p>
                         </div>
                       </div>
-                      
+
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                         <h4 className="font-semibold text-gray-900 mb-2 flex items-center text-sm">
                           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{
-                            color: dashboardData?.brandGuidelines?.color 
+                            color: dashboardData?.brandGuidelines?.color
                               ? formatColor(dashboardData.brandGuidelines.color)
                               : '#2563eb'
                           }}>
@@ -356,7 +356,7 @@ export function DropletDashboard() {
                           Ready-to-Use Template
                         </h4>
                         <p className="text-xs text-gray-700 mb-3 leading-relaxed">
-                          Get started with our complete template that includes React frontend, Node.js backend, 
+                          Get started with our complete template that includes React frontend, Node.js backend,
                           PostgreSQL database, webhook handling, and deployment scripts.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-2">
@@ -366,7 +366,7 @@ export function DropletDashboard() {
                             rel="noopener noreferrer"
                             className="inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors hover:opacity-90"
                             style={{
-                              backgroundColor: dashboardData?.brandGuidelines?.color 
+                              backgroundColor: dashboardData?.brandGuidelines?.color
                                 ? formatColor(dashboardData.brandGuidelines.color)
                                 : '#16a34a'
                             }}
@@ -389,7 +389,7 @@ export function DropletDashboard() {
                           </a>
                         </div>
                       </div>
-                      
+
                       <div className="text-xs text-gray-500 bg-gray-50 rounded-lg p-3 border border-gray-200">
                         <p className="font-medium text-gray-700 mb-2">What you get:</p>
                         <ul className="space-y-1 text-gray-600">
@@ -411,16 +411,16 @@ export function DropletDashboard() {
               <details className="group">
                 <summary className="flex items-center justify-between p-4 sm:p-6 cursor-pointer hover:bg-gray-100 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div 
+                    <div
                       className="w-8 h-8 rounded-lg flex items-center justify-center"
                       style={{
-                        backgroundColor: dashboardData?.brandGuidelines?.color 
+                        backgroundColor: dashboardData?.brandGuidelines?.color
                           ? `${formatColor(dashboardData.brandGuidelines.color)}20`
                           : '#6b728020'
                       }}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{
-                        color: dashboardData?.brandGuidelines?.color 
+                        color: dashboardData?.brandGuidelines?.color
                           ? formatColor(dashboardData.brandGuidelines.color)
                           : '#6b7280'
                       }}>
@@ -436,7 +436,7 @@ export function DropletDashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </summary>
-                
+
                 <div className="px-4 sm:px-6 pb-4 sm:pb-6">
                   <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 space-y-4">
                     <div>
@@ -447,26 +447,26 @@ export function DropletDashboard() {
                     </div>
                     <div>
                       <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Status</p>
-                      <span 
+                      <span
                         className="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium"
                         style={{
-                          backgroundColor: dashboardData?.brandGuidelines?.color 
+                          backgroundColor: dashboardData?.brandGuidelines?.color
                             ? `${formatColor(dashboardData.brandGuidelines.color)}20`
                             : '#dcfce720',
-                          color: dashboardData?.brandGuidelines?.color 
+                          color: dashboardData?.brandGuidelines?.color
                             ? formatColor(dashboardData.brandGuidelines.color)
                             : '#16a34a'
                         }}
                       >
                         <div className="w-2 h-2 rounded-full mr-2" style={{
-                          backgroundColor: dashboardData?.brandGuidelines?.color 
+                          backgroundColor: dashboardData?.brandGuidelines?.color
                             ? formatColor(dashboardData.brandGuidelines.color)
                             : '#16a34a'
                         }}></div>
                         Active
                       </span>
                     </div>
-                    
+
                     {/* API Token inside Installation Details */}
                     {dashboardData?.authenticationToken && (
                       <div className="pt-4 border-t border-gray-200">
@@ -489,7 +489,7 @@ export function DropletDashboard() {
                             </svg>
                           </button>
                         </div>
-                        
+
                         <div className="bg-gray-900 rounded-lg p-3 overflow-hidden">
                           <code className="text-green-400 font-mono text-xs sm:text-sm break-all block overflow-wrap-anywhere">
                             {showToken ? dashboardData.authenticationToken : '••••••••••••••••••••••••••••••••••••••••'}
@@ -529,21 +529,21 @@ export function DropletDashboard() {
                 <details className="group">
                   <summary className="flex items-center justify-between p-4 sm:p-6 cursor-pointer hover:bg-gray-100 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div 
+                      <div
                         className="w-8 h-8 rounded-lg flex items-center justify-center"
                         style={{
-                          backgroundColor: dashboardData?.brandGuidelines?.color 
+                          backgroundColor: dashboardData?.brandGuidelines?.color
                             ? `${formatColor(dashboardData.brandGuidelines.color)}20`
                             : '#8b5cf620'
                         }}
                       >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{
-                        color: dashboardData?.brandGuidelines?.color 
-                          ? formatColor(dashboardData.brandGuidelines.color)
-                          : '#8b5cf6'
-                      }}>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
-                      </svg>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{
+                          color: dashboardData?.brandGuidelines?.color
+                            ? formatColor(dashboardData.brandGuidelines.color)
+                            : '#8b5cf6'
+                        }}>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
+                        </svg>
                       </div>
                       <div>
                         <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Brand Guidelines</h3>
@@ -554,7 +554,7 @@ export function DropletDashboard() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </summary>
-                  
+
                   <div className="px-4 sm:px-6 pb-4 sm:pb-6">
                     <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200">
                       <div className="space-y-6">
@@ -563,7 +563,7 @@ export function DropletDashboard() {
                           <h4 className="font-medium text-gray-900 mb-3 text-sm sm:text-base">Brand Colors</h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="flex items-center gap-3">
-                              <div 
+                              <div
                                 className="w-8 h-8 rounded-lg border border-gray-200 flex-shrink-0"
                                 style={{ backgroundColor: `#${dashboardData.brandGuidelines.color}` }}
                               ></div>
@@ -574,7 +574,7 @@ export function DropletDashboard() {
                             </div>
                             {dashboardData.brandGuidelines.secondary_color && (
                               <div className="flex items-center gap-3">
-                                <div 
+                                <div
                                   className="w-8 h-8 rounded-lg border border-gray-200 flex-shrink-0"
                                   style={{ backgroundColor: `#${dashboardData.brandGuidelines.secondary_color}` }}
                                 ></div>
@@ -586,14 +586,14 @@ export function DropletDashboard() {
                             )}
                           </div>
                         </div>
-                        
+
                         {/* Logo */}
                         {dashboardData.brandGuidelines.logo_url && (
                           <div>
                             <h4 className="font-medium text-gray-900 mb-3 text-sm sm:text-base">Company Logo</h4>
                             <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-center">
-                              <img 
-                                src={dashboardData.brandGuidelines.logo_url} 
+                              <img
+                                src={dashboardData.brandGuidelines.logo_url}
                                 alt="Company logo"
                                 className="max-h-12 sm:max-h-16 object-contain"
                                 onError={(e) => {
@@ -615,16 +615,16 @@ export function DropletDashboard() {
               <details className="group">
                 <summary className="flex items-center justify-between p-4 sm:p-6 cursor-pointer hover:bg-gray-100 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div 
+                    <div
                       className="w-8 h-8 rounded-lg flex items-center justify-center"
                       style={{
-                        backgroundColor: dashboardData?.brandGuidelines?.color 
+                        backgroundColor: dashboardData?.brandGuidelines?.color
                           ? `${formatColor(dashboardData.brandGuidelines.color)}20`
                           : '#10b98120'
                       }}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{
-                        color: dashboardData?.brandGuidelines?.color 
+                        color: dashboardData?.brandGuidelines?.color
                           ? formatColor(dashboardData.brandGuidelines.color)
                           : '#10b981'
                       }}>
@@ -640,19 +640,19 @@ export function DropletDashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </summary>
-                
+
                 <div className="px-4 sm:px-6 pb-4 sm:pb-6">
                   <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 space-y-4">
                     <div>
                       <p className="text-sm text-gray-700 leading-relaxed mb-4">
-                        This section demonstrates how to sync data between Fluid and your droplet. 
+                        This section demonstrates how to sync data between Fluid and your droplet.
                         You can pull products from Fluid's API and store them in your database.
                       </p>
-                      
+
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                         <h4 className="font-semibold text-gray-900 mb-2 flex items-center text-sm">
                           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{
-                            color: dashboardData?.brandGuidelines?.color 
+                            color: dashboardData?.brandGuidelines?.color
                               ? formatColor(dashboardData.brandGuidelines.color)
                               : '#2563eb'
                           }}>
@@ -661,8 +661,8 @@ export function DropletDashboard() {
                           Products Sync Example
                         </h4>
                         <p className="text-xs text-gray-700 mb-3 leading-relaxed">
-                          Click the "Sync from Fluid" button below to fetch products from Fluid's API 
-                          and store them in your droplet's database. This demonstrates the complete 
+                          Click the "Sync from Fluid" button below to fetch products from Fluid's API
+                          and store them in your droplet's database. This demonstrates the complete
                           integration workflow.
                         </p>
                         <div className="text-xs text-gray-600 bg-white rounded p-3 border border-gray-200">
@@ -675,10 +675,10 @@ export function DropletDashboard() {
                           </ul>
                         </div>
                       </div>
-                      
+
                       {/* Products Section */}
-                      <ProductsSection 
-                        installationId={dashboardData?.installationId || ''} 
+                      <ProductsSection
+                        installationId={dashboardData?.installationId || ''}
                         brandGuidelines={dashboardData?.brandGuidelines}
                       />
                     </div>

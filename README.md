@@ -148,6 +148,7 @@ The code is clean and organized - easy to understand and modify!
 - **[DEPLOYMENT-INFO.md](DEPLOYMENT-INFO.md)** - Current deployment details and URLs
 - **[DOCKER.md](DOCKER.md)** - Docker development and deployment guide  
 - **[GCP-DEPLOYMENT.md](GCP-DEPLOYMENT.md)** - Complete Google Cloud Platform guide
+- **[⚠️ WEBHOOK-SETUP-ISSUE.md](WEBHOOK-SETUP-ISSUE.md)** - **Critical**: Known webhook configuration issue
 
 
 # 🚀 How to Build Your Own Fluid Droplet
